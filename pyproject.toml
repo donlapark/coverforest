@@ -6,14 +6,13 @@ build-backend = "setuptools.build_meta"
 name = "coverforest"
 dynamic = ["version"]
 authors = [
-  { name="Vighnesh Birodkar", email="vighneshbirodkar@nyu.edu" },
-  { name="Guillaume Lemaitre", email="g.lemaitre58@gmail.com" },
+  { name="Donlapark Ponnoprat", email="donlapark.p@cmu.ac.th" },
 ]
 description = "A template for scikit-learn compatible packages."
 readme = "README.md"
 requires-python = ">=3.9"
 dependencies = [
-  "scikit-learn>=1.4.2",
+  "scikit-learn>=1.6.0",
 ]
 classifiers = [
     "Programming Language :: Python :: 3",
@@ -29,8 +28,8 @@ classifiers = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/scikit-learn-contrib/coverforest"
-Issues = "https://github.com/scikit-learn-contrib/coverforest/issues"
+Homepage = "https://github.com/donlapark/coverforest"
+Issues = "https://github.com/donlapark/coverforest/issues"
 
 [tool.setuptools_scm]
 version_file = "coverforest/_version.py"
@@ -41,7 +40,7 @@ platforms = ["win-64", "linux-64", "osx-64", "osx-arm64"]
 
 [tool.pixi.dependencies]
 python = ">=3.9"
-scikit-learn = ">=1.4.2"
+scikit-learn = ">=1.6.0"
 
 [tool.pixi.pypi-dependencies]
 coverforest = { path=".", editable=true }
