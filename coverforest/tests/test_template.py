@@ -4,7 +4,7 @@ import pytest
 from sklearn.datasets import load_iris
 from sklearn.utils._testing import assert_allclose, assert_array_equal
 
-from CoverForest import TemplateClassifier, TemplateEstimator, TemplateTransformer
+from coverforest import TemplateClassifier, TemplateEstimator, TemplateTransformer
 
 # Authors: scikit-learn-contrib developers
 # License: BSD 3 clause
