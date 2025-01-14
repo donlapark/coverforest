@@ -1025,6 +1025,7 @@ class BaseConformalForest(BaseForest):
             X = X.tocsr()
 
         n_samples = X.shape[0]
+        n_estimators = len(self.estimators_)
         classifier = is_classifier(self)
 
         if classifier and hasattr(self, "n_classes_"):
@@ -1034,15 +1035,15 @@ class BaseConformalForest(BaseForest):
 
         if classifier:
             y_pred_shape = (n_samples, n_classes)
-            y_pred_all_shape = (self.n_estimators, n_samples, n_classes)
+            y_pred_all_shape = (n_estimators, n_samples, n_classes)
         else:
             y_pred_shape = (n_samples,)
-            y_pred_all_shape = (self.n_estimators, n_samples)
+            y_pred_all_shape = (n_estimators, n_samples)
 
         y_pred = np.zeros(y_pred_shape, dtype=np.float64)
         y_pred_all = np.zeros(y_pred_all_shape, dtype=np.float64)
 
-        n_jobs, _, _ = _partition_estimators(self.n_estimators, self.n_jobs)
+        n_jobs, _, _ = _partition_estimators(n_estimators, self.n_jobs)
         classifier = is_classifier(self)
         pred_func = "predict_proba" if classifier else "predict"
 
@@ -1052,7 +1053,7 @@ class BaseConformalForest(BaseForest):
         )
 
         if classifier:
-            oob_pred = self.oob_matrix_ @ y_pred_all.reshape(self.n_estimators, -1)
+            oob_pred = self.oob_matrix_ @ y_pred_all.reshape(n_estimators, -1)
             oob_pred = oob_pred.reshape(self._n_samples, n_samples, n_classes)
             oob_pred /= self._n_oob_pred[:, :, None]
         else:
@@ -1085,6 +1086,7 @@ class BaseConformalForest(BaseForest):
 
         if self.method == "cv":
             estimator = deepcopy(self.estimator)
+            estimator.set_params(**{p: getattr(self, p) for p in self.estimator_params})
 
             if random_state is not None:
                 random_state = check_random_state(random_state)
@@ -1095,6 +1097,9 @@ class BaseConformalForest(BaseForest):
 
                 if to_set:
                     estimator.set_params(**to_set)
+            if append:
+                self.estimators_.append(estimator)
+
         else:
             estimator = super()._make_estimator(append, random_state)
 
@@ -1344,7 +1349,7 @@ class ConformalForestClassifier(
                 for lambda_ in [0.001, 0.01, 0.1, 0.2, 0.5, 1]:
                     self.lambda_star_ = lambda_
                     self._fit_wrapper(X1, y1, calib_size, sw1)
-                    _, y_set_pred = self.predict(X2, binary_output=True)
+                    _, y_set_pred = self.predict(X2, alpha=alpha, binary_output=True)
                     sum_size = y_set_pred.sum()
                     if sum_size < best_sum_size:
                         best_sum_size = sum_size
@@ -1555,7 +1560,7 @@ class ConformalForestClassifier(
 
         return y_set_pred
 
-    def predict(self, X, alpha=0.05, binary_output=False, num_threads=4):
+    def predict(self, X, alpha=None, binary_output=False, num_threads=4):
         """Predict class labels and prediction sets for X.
 
         Parameters
@@ -1588,13 +1593,13 @@ class ConformalForestClassifier(
         """
 
         if self.method in ["cv", "bootstrap"]:
-            y_pred, y_set_pred = self._predict_cv(X, alpha, binary_output, num_threads)
+            y_out = self._predict_cv(X, alpha, binary_output, num_threads)
         else:
-            y_pred, y_set_pred = self._predict_split(X, alpha, binary_output)
+            y_out = self._predict_split(X, alpha, binary_output)
 
-        return y_pred, y_set_pred
+        return y_out
 
-    def _predict_cv(self, X, alpha=0.05, binary_output=False, num_threads=4):
+    def _predict_cv(self, X, alpha=None, binary_output=False, num_threads=4):
         """Predict using CV+ or Jackknife+-after-Bootstrap method.
 
         This method will be called during prediction when `method='cv'`.
@@ -1633,21 +1638,23 @@ class ConformalForestClassifier(
 
         y_pred, oob_pred = self._compute_oob_predictions(X)
         y_pred = self.classes_.take(np.argmax(y_pred, axis=1), axis=0)
-
-        test_giqs = self._compute_test_giqs(oob_pred, num_threads)
-        compare_giqs = (self.train_giqs_[:, None, None] < test_giqs).sum(axis=0)
-        compare_giqs = compare_giqs < ((1 - alpha) * (self._n_samples + 1))
-
-        if binary_output:
-            y_set_pred = compare_giqs.astype(int)
+        if alpha is None:
+            return y_pred
         else:
-            y_set_pred = [
-                self.classes_.take(pred.nonzero()[0]) for pred in compare_giqs
-            ]
+            test_giqs = self._compute_test_giqs(oob_pred, num_threads)
+            compare_giqs = (self.train_giqs_[:, None, None] < test_giqs).sum(axis=0)
+            compare_giqs = compare_giqs < ((1 - alpha) * (self._n_samples + 1))
 
-        return y_pred, y_set_pred
+            if binary_output:
+                y_set_pred = compare_giqs.astype(int)
+            else:
+                y_set_pred = [
+                    self.classes_.take(pred.nonzero()[0]) for pred in compare_giqs
+                ]
 
-    def _predict_split(self, X, alpha=0.05, binary_output=False, num_threads=4):
+            return y_pred, y_set_pred
+
+    def _predict_split(self, X, alpha=None, binary_output=False, num_threads=4):
         """Predict using split conformal method.
 
         This method will be called during prediction when `method='split'`.
@@ -1686,12 +1693,17 @@ class ConformalForestClassifier(
         y_pred_proba = self.predict_proba(X)
         y_pred = self.classes_.take(np.argmax(y_pred_proba, axis=1), axis=0)
 
-        tau = np.quantile(self.train_giqs_, 1 - alpha, method="higher")
-        y_set_pred = self._predict_from_giqs(y_pred_proba, tau, num_threads)
-        if not binary_output:
-            y_set_pred = [self.classes_.take(pred.nonzero()[0]) for pred in y_set_pred]
+        if alpha is None:
+            return y_pred
+        else:
+            tau = np.quantile(self.train_giqs_, 1 - alpha, method="higher")
+            y_set_pred = self._predict_from_giqs(y_pred_proba, tau, num_threads)
+            if not binary_output:
+                y_set_pred = [
+                    self.classes_.take(pred.nonzero()[0]) for pred in y_set_pred
+                ]
 
-        return y_pred, y_set_pred
+            return y_pred, y_set_pred
 
 
 class ConformalForestRegressor(
@@ -1768,7 +1780,7 @@ class ConformalForestRegressor(
 
         return self
 
-    def predict(self, X, alpha=0.05, num_threads=4):
+    def predict(self, X, alpha=None, num_threads=4):
         """Predict regression values and prediction intervals for X.
 
         Parameters
@@ -1794,13 +1806,13 @@ class ConformalForestRegressor(
         """
 
         if self.method in ["cv", "bootstrap"]:
-            y_pred, y_intervals = self._predict_cv(X, alpha, num_threads)
+            y_out = self._predict_cv(X, alpha, num_threads)
         else:
-            y_pred, y_intervals = self._predict_split(X, alpha)
+            y_out = self._predict_split(X, alpha)
 
-        return y_pred, y_intervals
+        return y_out
 
-    def _predict_cv(self, X, alpha=0.05, num_threads=4):
+    def _predict_cv(self, X, alpha=None, num_threads=4):
         """Predict using CV+ or Jackknife+-after-Bootstrap method.
 
         This method will be called during prediction when `method='cv'`.
@@ -1832,16 +1844,18 @@ class ConformalForestRegressor(
 
         y_pred, oob_pred = self._compute_oob_predictions(X)
 
-        # y_pred = y_pred[:, 0]
-        # oob_pred = oob_pred[:, :, 0]
+        if alpha is None:
+            return y_pred
+        else:
+            q_lo = np.quantile(
+                oob_pred - self.residuals_, alpha, method="lower", axis=0
+            )
+            q_hi = np.quantile(
+                oob_pred + self.residuals_, 1 - alpha, method="higher", axis=0
+            )
+            return y_pred, np.column_stack([q_lo, q_hi])
 
-        q_lo = np.quantile(oob_pred - self.residuals_, alpha, method="lower", axis=0)
-        q_hi = np.quantile(
-            oob_pred + self.residuals_, 1 - alpha, method="higher", axis=0
-        )
-        return y_pred, np.column_stack([q_lo, q_hi])
-
-    def _predict_split(self, X, alpha=0.05):
+    def _predict_split(self, X, alpha=None):
         """Predict using split conformal method.
 
         This method will be called during prediction when `method='split'`.
@@ -1869,10 +1883,11 @@ class ConformalForestRegressor(
         X = self._validate_X_predict(X)
 
         y_pred = FastRandomForestRegressor.predict(self, X)
-
-        q = np.quantile(self.residuals_[:, 0], 1 - alpha, method="higher")
-
-        return y_pred, np.column_stack([y_pred - q, y_pred + q])
+        if alpha is None:
+            return y_pred
+        else:
+            q = np.quantile(self.residuals_[:, 0], 1 - alpha, method="higher")
+            return y_pred, np.column_stack([y_pred - q, y_pred + q])
 
 
 class CoverForestClassifier(ConformalForestClassifier):
@@ -2236,7 +2251,7 @@ class CoverForestClassifier(ConformalForestClassifier):
         *,
         method="cv",
         cv=5,
-        n_subestimators=100,
+        n_subestimators=50,
         k_init="auto",
         lambda_init="auto",
         repeat_params_search=True,
@@ -2279,6 +2294,14 @@ class CoverForestClassifier(ConformalForestClassifier):
         if isinstance(method, str) and method == "cv":
             estimator = FastRandomForestClassifier(
                 n_estimators=n_subestimators,
+                criterion=criterion,
+                max_depth=max_depth,
+                min_samples_split=min_samples_split,
+                min_samples_leaf=min_samples_leaf,
+                min_weight_fraction_leaf=min_weight_fraction_leaf,
+                max_features=max_features,
+                max_leaf_nodes=max_leaf_nodes,
+                min_impurity_decrease=min_impurity_decrease,
                 ccp_alpha=ccp_alpha,
                 bootstrap=bootstrap,
                 oob_score=oob_score,
@@ -2286,14 +2309,11 @@ class CoverForestClassifier(ConformalForestClassifier):
                 random_state=random_state,
                 warm_start=warm_start,
                 max_samples=max_samples,
-                class_weight=class_weight,
                 monotonic_cst=monotonic_cst,
             )
             estimator_params += (
                 "bootstrap",
-                "class_weight",
                 "max_samples",
-                "n_estimators",
                 "n_jobs",
                 "oob_score",
                 "warm_start",
@@ -2628,7 +2648,7 @@ class CoverForestRegressor(ConformalForestRegressor):
         *,
         method="cv",
         cv=5,
-        n_subestimators=100,
+        n_subestimators=50,
         resample_n_estimators=True,
         criterion="squared_error",
         max_depth=None,
@@ -2665,6 +2685,14 @@ class CoverForestRegressor(ConformalForestRegressor):
         if isinstance(method, str) and method == "cv":
             estimator = FastRandomForestRegressor(
                 n_estimators=n_subestimators,
+                criterion=criterion,
+                max_depth=max_depth,
+                min_samples_split=min_samples_split,
+                min_samples_leaf=min_samples_leaf,
+                min_weight_fraction_leaf=min_weight_fraction_leaf,
+                max_features=max_features,
+                max_leaf_nodes=max_leaf_nodes,
+                min_impurity_decrease=min_impurity_decrease,
                 ccp_alpha=ccp_alpha,
                 bootstrap=bootstrap,
                 oob_score=oob_score,
@@ -2677,7 +2705,6 @@ class CoverForestRegressor(ConformalForestRegressor):
             estimator_params += (
                 "bootstrap",
                 "max_samples",
-                "n_estimators",
                 "n_jobs",
                 "oob_score",
                 "warm_start",
