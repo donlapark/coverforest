@@ -37,18 +37,6 @@ from numbers import Integral, Real
 from warnings import catch_warnings, simplefilter, warn
 
 import numpy as np
-from _fast_random_forest import (
-    BaseFastForest,
-    FastRandomForestClassifier,
-    FastRandomForestRegressor,
-)
-from _giqs import _compute_predictions_split, _compute_test_giqs_cv
-from metrics import (
-    average_interval_length_loss,
-    average_set_size_loss,
-    classification_coverage_score,
-    regression_coverage_score,
-)
 from scipy.sparse import issparse
 from sklearn.base import _fit_context, is_classifier
 from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
@@ -74,6 +62,19 @@ from sklearn.utils.validation import (
     check_is_fitted,
     check_random_state,
     validate_data,
+)
+
+from ._fast_random_forest import (
+    BaseFastForest,
+    FastRandomForestClassifier,
+    FastRandomForestRegressor,
+)
+from ._giqs import _compute_predictions_split, _compute_test_giqs_cv
+from .metrics import (
+    average_interval_length_loss,
+    average_set_size_loss,
+    classification_coverage_score,
+    regression_coverage_score,
 )
 
 MAX_INT = np.iinfo(np.int32).max
@@ -844,10 +845,10 @@ class BaseConformalForest(BaseForest):
         # calculate oob scores
         oob_pred = np.zeros(oob_pred_shape, dtype=np.float64)
 
+        pred_func = "predict_proba" if is_classifier(self) else "predict"
+
         for i, tree in enumerate(self.estimators_):
-            predict_func = (
-                tree.predict_proba if hasattr(tree, "predict_proba") else tree.predict
-            )
+            predict_func = getattr(tree, pred_func)
 
             if X_csr is not None:
                 y_pred = predict_func(
@@ -1024,7 +1025,6 @@ class BaseConformalForest(BaseForest):
             X = X.tocsr()
 
         n_samples = X.shape[0]
-        n_estimators = len(self.estimators_)
         classifier = is_classifier(self)
 
         if classifier and hasattr(self, "n_classes_"):
@@ -1032,33 +1032,33 @@ class BaseConformalForest(BaseForest):
         else:
             n_classes = 1
 
-        if n_classes == 1:
-            y_pred_shape = (n_samples,)
-            y_pred_all_shape = (n_estimators, n_samples)
-        else:
+        if classifier:
             y_pred_shape = (n_samples, n_classes)
-            y_pred_all_shape = (n_estimators, n_samples, n_classes)
+            y_pred_all_shape = (self.n_estimators, n_samples, n_classes)
+        else:
+            y_pred_shape = (n_samples,)
+            y_pred_all_shape = (self.n_estimators, n_samples)
 
         y_pred = np.zeros(y_pred_shape, dtype=np.float64)
         y_pred_all = np.zeros(y_pred_all_shape, dtype=np.float64)
 
         n_jobs, _, _ = _partition_estimators(self.n_estimators, self.n_jobs)
         classifier = is_classifier(self)
+        pred_func = "predict_proba" if classifier else "predict"
+
         Parallel(n_jobs=n_jobs, verbose=self.verbose, require="sharedmem")(
-            delayed(_accumulate_prediction)(
-                e.predict_proba if classifier else e.predict, X, i, y_pred_all
-            )
+            delayed(_accumulate_prediction)(getattr(e, pred_func), X, i, y_pred_all)
             for i, e in enumerate(self.estimators_)
         )
 
         if classifier:
-            oob_pred = self.oob_matrix_ @ y_pred_all.reshape(n_estimators, -1)
+            oob_pred = self.oob_matrix_ @ y_pred_all.reshape(self.n_estimators, -1)
             oob_pred = oob_pred.reshape(self._n_samples, n_samples, n_classes)
             oob_pred /= self._n_oob_pred[:, :, None]
         else:
             oob_pred = self.oob_matrix_ @ y_pred_all / self._n_oob_pred
 
-        y_pred = y_pred_all.mean(axis=-1)
+        y_pred = y_pred_all.mean(axis=0)
 
         return y_pred, oob_pred
 
