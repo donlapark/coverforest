@@ -8,14 +8,14 @@ The module structure is the following:
 
 - The ``CoverForestClassifier`` and ``CoverForestRegressor`` classes each provide three
 methods random forest classifiers that output prediction sets and prediction
-intervals using conformal prediction. 
+intervals using conformal prediction.
     - For classification, the prediction sets are obtained using adaptive
 prediction set (APS) proposed by Romano, Sesia & Candès (2020). The code also
 provides regularization introduced by Angelopoulos, Bates, Malik & Jordan
 (2021) to encourage smaller sets.
     - For regression, the prediction intervals are obtained using the
 Jackknife+ and CV+ on the residuals proposed by Barber, Candès, Ramdas &
-Tibshirani (2021). 
+Tibshirani (2021).
     The method, specified in the ``method`` parameter, includes:
     - ``method=cv``:   Random Forest with CV+ for prediction sets/intervals
     - ``method=bootstrap``:   Random Forest with Jackknife+-after-Bootstrap for
@@ -31,65 +31,57 @@ Tibshirani (2021).
 #
 # License: BSD 3 clause
 
-import threading
-from abc import ABCMeta, abstractmethod
+from abc import abstractmethod
 from copy import deepcopy
 from numbers import Integral, Real
 from warnings import catch_warnings, simplefilter, warn
 
 import numpy as np
-import sklearn
-from scipy.sparse import issparse
-
-from sklearn.base import (
-    BaseEstimator,
-    ClassifierMixin, 
-    _fit_context,
-    is_classifier
+from _fast_random_forest import (
+    BaseFastForest,
+    FastRandomForestClassifier,
+    FastRandomForestRegressor,
 )
-from sklearn.model_selection import KFold, train_test_split
-
+from _giqs import _compute_predictions_split, _compute_test_giqs_cv
+from metrics import (
+    average_interval_length_loss,
+    average_set_size_loss,
+    classification_coverage_score,
+    regression_coverage_score,
+)
+from scipy.sparse import issparse
+from sklearn.base import _fit_context, is_classifier
 from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
 from sklearn.ensemble._base import _partition_estimators
 from sklearn.ensemble._forest import (
     BaseForest,
     ForestClassifier,
     ForestRegressor,
-    _get_n_samples_bootstrap
+    _get_n_samples_bootstrap,
 )
+from sklearn.model_selection import KFold, train_test_split
 from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
 from sklearn.tree._tree import DOUBLE, DTYPE
 from sklearn.utils import compute_sample_weight
-from sklearn.utils._array_api import _average, device
-from sklearn.utils._param_validation import Interval, RealNotInt, StrOptions
+from sklearn.utils._param_validation import Interval, StrOptions
+from sklearn.utils._tags import ClassifierTags, RegressorTags
 from sklearn.utils.multiclass import type_of_target
 from sklearn.utils.parallel import Parallel, delayed
-from sklearn.utils._tags import ClassifierTags, RegressorTags
 from sklearn.utils.validation import (
+    _check_sample_weight,
+    _check_y,
     check_consistent_length,
     check_is_fitted,
     check_random_state,
-    _check_y,
-    column_or_1d,
     validate_data,
-    _check_sample_weight,
-    _get_feature_names
 )
-
-from .metrics import (
-    average_interval_length_loss,
-    average_set_size_loss,
-    classification_coverage_score,
-    regression_coverage_score
-)
-from ._fast_random_forest import BaseFastForest, FastRandomForestClassifier, FastRandomForestRegressor
-from ._giqs import _compute_test_giqs_cv, _compute_predictions_split
-
 
 MAX_INT = np.iinfo(np.int32).max
 
 
-def _generate_sample_indices(random_state, kfold_indices, k, tree_idx, n_samples, n_samples_bootstrap, method):
+def _generate_sample_indices(
+    random_state, kfold_indices, k, tree_idx, n_samples, n_samples_bootstrap, method
+):
     """Generate sample indices for building trees.
 
     Private function used to generate sample indices for individual trees in parallel
@@ -118,48 +110,15 @@ def _generate_sample_indices(random_state, kfold_indices, k, tree_idx, n_samples
         The generated sample indices for building the tree.
     """
 
-    if method == 'cv':
+    if method == "cv":
         sample_indices = kfold_indices[tree_idx % k][0]
     else:
         random_instance = check_random_state(random_state)
         sample_indices = random_instance.randint(
-        0, n_samples, n_samples_bootstrap, dtype=np.int32
+            0, n_samples, n_samples_bootstrap, dtype=np.int32
         )
 
     return sample_indices
-
-
-def _generate_unsampled_indices(
-        random_state, n_samples, n_samples_bootstrap
-    ):
-    """Generate indices for unsampled (out-of-bag) samples.
-
-    Parameters
-    ----------
-    random_state : int, RandomState instance or None.
-        The random number generator instance.
-    tree_idx : int
-        Index of the current tree.
-    n_samples : int
-        Total number of samples.
-    n_samples_bootstrap : int
-        Number of samples drawn for bootstrap.
-
-    Returns
-    -------
-    unsampled_indices : ndarray of shape (n_unsampled_samples,)
-        The indices of samples not used in the bootstrap sampling.
-    """
-
-    sample_indices = _generate_sample_indices(
-        random_state, None, None, None, n_samples, n_samples_bootstrap, method='oob'
-    )
-    sample_counts = np.bincount(sample_indices, minlength=n_samples)
-    unsampled_mask = sample_counts == 0
-    indices_range = np.arange(n_samples)
-    unsampled_indices = indices_range[unsampled_mask]
-
-    return unsampled_indices
 
 
 def _parallel_build_trees(
@@ -172,12 +131,13 @@ def _parallel_build_trees(
     sample_weight,
     tree_idx,
     n_trees,
+    oob_mat,
     verbose=0,
     class_weight=None,
     n_samples=None,
     n_samples_bootstrap=None,
     random_state=None,
-    n_classes=None
+    n_classes=None,
 ):
     """Fit a single tree in parallel on a subsample obtained via `method`.
 
@@ -235,13 +195,15 @@ def _parallel_build_trees(
         tree_idx,
         n_samples,
         n_samples_bootstrap,
-        method
+        method,
     )
-    
+
     sample_counts = np.bincount(indices, minlength=n_samples)
 
+    oob_mat[:, tree_idx] = sample_counts == 0
+
     curr_sample_weight *= sample_counts
-    
+
     if not hasattr(tree, "n_classes_"):
         tree.n_classes_ = n_classes
 
@@ -257,61 +219,13 @@ def _parallel_build_trees(
     return tree
 
 
-def _accumulate_prediction_cv(
-        predict,
-        X,
-        i,
-        kfold_indices,
-        n_folds,
-        out,
-        y_pred
-    ):
+def _accumulate_prediction(predict, X, i, out):
+    """Store the test predictions of each tree in an array.
+
+    This method will be called in parallel.
     """
-    A utility function for parallel predictions with `method='cv'`.
 
-    Add the tree's predictions on `X` to every out-of-box training rows in
-    `out`.
-
-    Add the tree's predictions on `X` to `y_pred`.
-    """
-    prediction = predict(X, check_input=False)
-    indices = kfold_indices[i % n_folds][1]
-        
-    # no lock required for disjoint subsets
-    y_pred += prediction
-    for i in indices:
-        out[i] += prediction
-
-
-def _accumulate_prediction_bootstrap(
-        predict,
-        X,
-        random_state,
-        n_samples,
-        n_samples_bootstrap,
-        out,
-        n_out,
-        y_pred,
-        lock
-    ):
-    """
-    A utility function for parallel predictions with `method='bootstrap'`.
-
-    Add the tree's predictions on `X` to every out-of-box training rows
-    in `out`.
-
-    Add the tree's predictions on `X` to `y_pred`.
-    """
-    prediction = predict(X, check_input=False)
-    indices = _generate_unsampled_indices(
-        random_state, n_samples, n_samples_bootstrap
-    )
-
-    with lock:
-        y_pred += prediction
-        for i in indices:
-            out[i] += prediction
-            n_out[i] += 1
+    out[i] = predict(X, check_input=False)
 
 
 class ConformalClassifierMixin:
@@ -330,7 +244,7 @@ class ConformalClassifierMixin:
     where:
     - α is the desired miscoverage rate
     - The probability is taken over the pair (X,Y)
-    - This guarantee holds for any data distribution, with an assumption that 
+    - This guarantee holds for any data distribution, with an assumption that
       the samples (X₁,Y₁), ... , (Xₙ,Yₙ) are i.i.d. Some methods require a
       weaker assumption that they are exchangable.
 
@@ -353,7 +267,7 @@ class ConformalClassifierMixin:
     ...         self.n_classes_ = np.unique(y).shape[0]
     ...         return self
     ...     def predict(self, X):
-    ...         return np.full(shape=(X.shape[0], self.n_classes_), 
+    ...         return np.full(shape=(X.shape[0], self.n_classes_),
                              fill_value=self.param)
     >>> estimator = MyEstimator(param=1)
     >>> X = np.array([[1, 2], [2, 3], [3, 4]])
@@ -423,7 +337,6 @@ class ConformalClassifierMixin:
         else:
             raise ValueError("`scoring` must be one of `coverage`, `size` or `both`.")
 
-
     def __sklearn_tags__(self):
         tags = super().__sklearn_tags__()
         tags.estimator_type = "classifier"
@@ -452,7 +365,7 @@ class ConformalRegressorMixin:
     where:
     - α is the desired miscoverage rate
     - The probability is taken over the pair (X,Y)
-    - This guarantee holds for any data distribution with an assumption that 
+    - This guarantee holds for any data distribution with an assumption that
       the samples (X₁,Y₁), ... , (Xₙ,Yₙ) are i.i.d. Some methods require a
       weaker assumption that they are exchangable.
 
@@ -476,7 +389,7 @@ class ConformalRegressorMixin:
     ...     def predict(self, X, alpha=0.05):
     ...         n_samples = X.shape[0]
     ...         y_pred = np.zeros(n_samples)
-    ...         intervals = np.column_stack([-np.ones(n_samples), 
+    ...         intervals = np.column_stack([-np.ones(n_samples),
     ...                                     np.ones(n_samples)])
     ...         return y_pred, intervals
     >>> reg = MyConformalRegressor()
@@ -508,13 +421,14 @@ class ConformalRegressorMixin:
             True labels for X.
 
         alpha : float, default=0.05
-            The desired miscoverage rate. The method will construct prediction 
+            The desired miscoverage rate. The method will construct prediction
             intervals with approximately (1-alpha) coverage.
 
         scoring : {'length', 'coverage', 'both'}, default='length'
             The scoring metric to use:
             - 'length': returns the average length of prediction intervals
-            - 'coverage': returns the empirical coverage (proportion of true values in intervals)
+            - 'coverage': returns the empirical coverage (proportion of true values in
+              intervals)
             - 'both': returns a tuple of (coverage, average_length)
 
         sample_weight : array-like of shape (n_samples,), default=None
@@ -526,7 +440,7 @@ class ConformalRegressorMixin:
             If scoring='length': returns average interval length (float)
             If scoring='coverage': returns empirical coverage (float)
             If scoring='both': returns (coverage, average_length) tuple
-        """ 
+        """
         y = _check_y(y, estimator=self)
         check_consistent_length(X, y, sample_weight)
         _, y_intervals = self.predict(X, alpha)
@@ -546,7 +460,6 @@ class ConformalRegressorMixin:
         else:
             raise ValueError("`scoring` must be one of `coverage`, `length` or `both`.")
 
-
     def __sklearn_tags__(self):
         tags = super().__sklearn_tags__()
         tags.estimator_type = "regressor"
@@ -561,7 +474,7 @@ class ConformalRegressorMixin:
 
 class BaseConformalForest(BaseForest):
     """Base class for conformal forests of trees.
-    
+
     This class extends scikit-learn's BaseForest to implement conformal
     prediction.
 
@@ -571,13 +484,8 @@ class BaseConformalForest(BaseForest):
 
     _parameter_constraints = {
         **BaseForest._parameter_constraints,
-        "method": [
-            StrOptions({"bootstrap", "cv", "split"})
-        ],
-        "cv": [
-            Interval(Integral, 2, None, closed="left"), 
-            "cv_object"
-        ],
+        "method": [StrOptions({"bootstrap", "cv", "split"})],
+        "cv": [Interval(Integral, 2, None, closed="left"), "cv_object"],
         "resample_n_estimators": ["boolean"],
     }
 
@@ -588,7 +496,7 @@ class BaseConformalForest(BaseForest):
         *,
         estimator_params=tuple(),
         n_estimators=100,
-        method='cv',
+        method="cv",
         cv=5,
         resample_n_estimators=True,
         oob_score=False,
@@ -608,7 +516,7 @@ class BaseConformalForest(BaseForest):
             random_state=random_state,
             verbose=verbose,
             warm_start=warm_start,
-            max_samples=max_samples
+            max_samples=max_samples,
         )
 
         self.n_estimators = n_estimators
@@ -619,7 +527,7 @@ class BaseConformalForest(BaseForest):
 
     def _check_data(self, X, y=None, sample_weight=None, expanded_class_weight=None):
         """Validate or convert input data.
-    
+
         Parameters
         ----------
         X : {array-like, sparse matrix} of shape (n_samples, n_features)
@@ -630,13 +538,13 @@ class BaseConformalForest(BaseForest):
         y : array-like of shape (n_samples,) or (n_samples, n_outputs), default=None
             The target values (class labels in classification, real numbers in
             regression).
-    
+
         sample_weight : array-like of shape (n_samples,), default=None
             Sample weights. If None, then samples are equally weighted.
-        
+
         expanded_class_weight : array-like of shape (n_samples,), default=None
             Expanded class weights computed from `class_weight` parameter.
-        
+
         Returns
         -------
         X : {array-like, sparse matrix} of shape (n_samples, n_features)
@@ -651,7 +559,7 @@ class BaseConformalForest(BaseForest):
 
         if y is None:
             raise ValueError(
-                f"The model requires y to be passed, but the target y is None."
+                "The model requires y to be passed, but the target y is None."
             )
         else:
             if issparse(y):
@@ -663,11 +571,10 @@ class BaseConformalForest(BaseForest):
                 accept_sparse="csc",
                 dtype=DTYPE,
                 ensure_min_samples=2,
-                ensure_all_finite=False
+                ensure_all_finite=False,
             )
-                
+
         sample_weight = _check_sample_weight(sample_weight, X)
-            
 
         if issparse(X):
             # Pre-sort indices to avoid that each individual tree of the
@@ -702,22 +609,22 @@ class BaseConformalForest(BaseForest):
 
     def _fit_wrapper(self, X, y, calib_size, sample_weight):
         """Fit the forest using either CV+ or split conformal method.
-    
+
         Parameters
         ----------
         X : {array-like, sparse matrix} of shape (n_samples, n_features)
             The training input samples.
-        
+
         y : array-like of shape (n_samples,)
             The target values.
-        
+
         calib_size : float
             The proportion of samples to use for calibration in split conformal.
             Only used when method='split'.
-        
+
         sample_weight : array-like of shape (n_samples,), default=None
             Sample weights.
-        
+
         Returns
         -------
         self : object
@@ -729,10 +636,10 @@ class BaseConformalForest(BaseForest):
         else:
             self._fit_split(X, y, calib_size, sample_weight)
         return self
-        
+
     @_fit_context(prefer_skip_nested_validation=True)
     def _fit_cv(self, X, y, cv, sample_weight):
-        """"Build a forest of trees using CV+ or Jackknife+-after-bootstrap.
+        """ "Build a forest of trees using CV+ or Jackknife+-after-bootstrap.
 
         This method will be called when calling the `fit` method with
         `method='cv'` or `method='bootstrap'`.
@@ -740,29 +647,29 @@ class BaseConformalForest(BaseForest):
         will be fitted on K-1 folds.
         - If `method='bootstrap'`, the trees will be fitted on bootstrap
         subsamples.
-    
+
         Parameters
         ----------
         X : {array-like, sparse matrix} of shape (n_samples, n_features)
             The training input samples. Internally, its dtype will be converted
             to ``dtype=np.float32``. If a sparse matrix is provided, it will be
             converted into a sparse ``csc_matrix``.
-        
+
         y : array-like of shape (n_samples,) or (n_samples, n_outputs)
             The target values (class labels in classification, real numbers in
             regression).
-        
+
         cv : int or cross-validation generator
             Determines the cross-validation splitting strategy. If int,
             specifies the number of folds. See scikit-learn's model selection
             module for available cross-validation objects. Only used when
             `method='cv'`.
-        
+
         sample_weight : array-like of shape (n_samples,), default=None
             Sample weights. If None, then samples are equally weighted. Splits
             that would create child nodes with net zero or negative weight are
             ignored while searching for a split in each node.
-        
+
         Returns
         -------
         self : object
@@ -786,14 +693,15 @@ class BaseConformalForest(BaseForest):
 
         if self.method == "bootstrap":
             self._n_samples_bootstrap = _get_n_samples_bootstrap(
-                n_samples=self._n_samples , max_samples=self.max_samples
+                n_samples=self._n_samples, max_samples=self.max_samples
             )
             if self.resample_n_estimators:
                 n_estimators = np.maximum(
-                    2, random_state.binomial(
-                        self.n_estimators, 
-                        (1 - 1 / (self._n_samples + 1))**self._n_samples_bootstrap
-                    )
+                    2,
+                    random_state.binomial(
+                        self.n_estimators,
+                        (1 - 1 / (self._n_samples + 1)) ** self._n_samples_bootstrap,
+                    ),
                 )
             else:
                 n_estimators = self._n_samples_bootstrap
@@ -810,28 +718,31 @@ class BaseConformalForest(BaseForest):
 
                 if cv > self._n_samples:
                     print(
-                        f"The number of splits of {self._n_samples} is too low. Set the number of splits as the number of samples instead."
+                        f"The number of splits of {self._n_samples} is too low. Set the"
+                        " number of splits as the number of samples instead."
                     )
                     cv = self._n_samples
-                    
+
                 self._n_cv_folds = cv
 
                 cv = KFold(
-                    n_splits=self._n_cv_folds,
-                    shuffle=True,
-                    random_state=random_state
+                    n_splits=self._n_cv_folds, shuffle=True, random_state=random_state
                 ).split(X)
                 cv = list(cv)
             else:
                 self._n_cv_folds = len(cv)
             if self.n_estimators < self._n_cv_folds:
                 warn(
-                    f"`n_estimators={self.n_estimators}` is smaller than the number of folds ({self._n_cv_folds}). It is recommended to choose a higher value of `n_estimators`."
+                    f"`n_estimators={self.n_estimators}` is smaller than the number of"
+                    f" folds ({self._n_cv_folds}). It is recommended to choose a higher"
+                    " value of `n_estimators`."
                 )
             n_estimators = (self.n_estimators // self._n_cv_folds) * self._n_cv_folds
             if self.n_estimators != n_estimators:
                 print(
-                    f"`n_estimators={self.n_estimators}` is not divisible by the number of folds ({self._n_cv_folds}). Set `n_estimators={n_estimators}` instead."
+                    f"`n_estimators={self.n_estimators}` is not divisible by the number"
+                    f" of folds ({self._n_cv_folds}). Set `n_estimators={n_estimators}`"
+                    " instead."
                 )
 
             self._n_samples_bootstrap = None
@@ -846,13 +757,14 @@ class BaseConformalForest(BaseForest):
             # Free allocated memory, if any
             self.estimators_ = []
 
+        self.oob_matrix_ = np.zeros((self._n_samples, n_estimators), dtype=bool)
         n_more_estimators = n_estimators - len(self.estimators_)
 
         # Decapsulate classes_ attributes
         if hasattr(self, "classes_") and self.n_outputs_ == 1:
             self.n_classes_ = self.n_classes_[0]
             self.classes_ = self.classes_[0]
-        
+
         if is_classifier(self) and hasattr(self, "n_classes_"):
             oob_pred_shape = (self._n_samples, self.n_classes_, self.n_outputs_)
             n_classes = self.n_classes_
@@ -890,14 +802,12 @@ class BaseConformalForest(BaseForest):
             # parallel_backend contexts set at a higher level,
             # since correctness does not rely on using threads.
             if issparse(X):
-               X_csr = X.tocsr()
+                X_csr = X.tocsr()
             else:
-               X_csr = None
+                X_csr = None
 
             trees = Parallel(
-                n_jobs=self.n_jobs,
-                verbose=self.verbose,
-                prefer="threads"
+                n_jobs=self.n_jobs, verbose=self.verbose, prefer="threads"
             )(
                 delayed(_parallel_build_trees)(
                     t,
@@ -909,11 +819,12 @@ class BaseConformalForest(BaseForest):
                     sample_weight,
                     i,
                     len(trees),
+                    self.oob_matrix_,
                     verbose=self.verbose,
                     class_weight=self.class_weight,
                     n_samples=self._n_samples,
                     n_samples_bootstrap=self._n_samples_bootstrap,
-                    n_classes=n_classes
+                    n_classes=n_classes,
                 )
                 for i, t in enumerate(trees)
             )
@@ -929,34 +840,27 @@ class BaseConformalForest(BaseForest):
                     f"estimates. Got {y_type} while only the following are "
                     "supported: continuous, binary. "
                 )
-                
+
         # calculate oob scores
         oob_pred = np.zeros(oob_pred_shape, dtype=np.float64)
-        n_oob_pred = np.zeros((self._n_samples, self.n_outputs_), dtype=np.int64)
 
         for i, tree in enumerate(self.estimators_):
-            if self.method == 'cv':
-                unsampled_indices = self.kfold_indices_[i % self._n_cv_folds][1]
-            else:
-                unsampled_indices = _generate_unsampled_indices(
-                    tree.random_state,
-                    self._n_samples,
-                    self._n_samples_bootstrap
-                )
+            predict_func = (
+                tree.predict_proba if hasattr(tree, "predict_proba") else tree.predict
+            )
 
-            predict_func = (tree.predict_proba if hasattr(tree, "predict_proba")
-                              else tree.predict)
-    
             if X_csr is not None:
-                y_pred = predict_func(X_csr[unsampled_indices, :], check_input=False)
+                y_pred = predict_func(
+                    X_csr[self.oob_matrix_[:, i], :], check_input=False
+                )
             else:
-                y_pred = predict_func(X[unsampled_indices, :], check_input=False)
+                y_pred = predict_func(X[self.oob_matrix_[:, i], :], check_input=False)
 
             y_pred = y_pred.reshape(-1, n_classes, 1)
-            oob_pred[unsampled_indices, ...] += y_pred
-            n_oob_pred[unsampled_indices, :] += 1
+            oob_pred[self.oob_matrix_[:, i], ...] += y_pred
 
-        if (n_oob_pred == 0).any():
+        self._n_oob_pred = self.oob_matrix_.sum(axis=1, keepdims=True)
+        if (self._n_oob_pred == 0).any():
             warn(
                 (
                     "Some inputs do not have OOB scores. This probably means "
@@ -965,10 +869,10 @@ class BaseConformalForest(BaseForest):
                 ),
                 UserWarning,
             )
-            n_oob_pred[n_oob_pred == 0] = 1
-        oob_pred /= n_oob_pred[:, None, :]
+            self._n_oob_pred[self._n_oob_pred == 0] = 1
+        oob_pred /= self._n_oob_pred[:, None, :]
         self.oob_pred_ = oob_pred
-            
+
         if is_classifier(self) and self.k_star_ is not None:
             self.train_giqs_ = self._compute_train_giqs(oob_pred, self.y_)
 
@@ -983,7 +887,7 @@ class BaseConformalForest(BaseForest):
 
         The training set will be split into a smaller training set and a
         calibration set. The model will be fitted on the former and calibration
-        scores will be calculated on the latter.  
+        scores will be calculated on the latter.
 
         Parameters
         ----------
@@ -995,11 +899,11 @@ class BaseConformalForest(BaseForest):
         y : array-like of shape (n_samples,) or (n_samples, n_outputs)
             The target values (class labels in classification, real numbers in
             regression).
-        
+
         calib_size : float
             The proportion of samples to use for calibration. Should be in
             (0, 1).
-        
+
         sample_weight : array-like of shape (n_samples,), default=None
             Sample weights. If None, then samples are equally weighted. Splits
             that would create child nodes with net zero or negative weight are
@@ -1012,14 +916,14 @@ class BaseConformalForest(BaseForest):
         """
 
         X, y, sample_weight = self._check_data(X, y, sample_weight)
-        
+
         if hasattr(self, "feature_names_in_"):
             feature_names_in_ = self.feature_names_in_
         else:
             feature_names_in_ = None
 
         random_state = check_random_state(self.random_state)
-        
+
         if is_classifier(self):
             y, expanded_class_weight = self._validate_y_class_weight(y)
 
@@ -1030,7 +934,7 @@ class BaseConformalForest(BaseForest):
                     sample_weight = expanded_class_weight
 
         if getattr(y, "dtype", None) != DOUBLE or not y.flags.contiguous:
-            y = np.ascontiguousarray(y, dtype=DOUBLE)                
+            y = np.ascontiguousarray(y, dtype=DOUBLE)
 
         sample_weight_int = sample_weight.astype(int)
         is_integer_weights = np.all(np.isclose(sample_weight, sample_weight_int, 1e-10))
@@ -1044,20 +948,20 @@ class BaseConformalForest(BaseForest):
 
         stratify = y if is_classifier(self) else None
 
-        X_train, X_cal, y_train, y_cal, sample_weight_train, sample_weight_cal= train_test_split(
-            X,
-            y,
-            sample_weight,
-            test_size=calib_size,
-            stratify=stratify,
-            random_state=random_state
+        X_train, X_cal, y_train, y_cal, sample_weight_train, sample_weight_cal = (
+            train_test_split(
+                X,
+                y,
+                sample_weight,
+                test_size=calib_size,
+                stratify=stratify,
+                random_state=random_state,
+            )
         )
 
         BaseFastForest.fit(self, X_train, y_train, sample_weight=sample_weight_train)
-        
-        if self.oob_score and (
-            n_more_estimators > 0 or not hasattr(self, "oob_score_")
-        ):
+
+        if self.oob_score and not hasattr(self, "oob_score_"):
             y_type = type_of_target(y)
             if y_type in ("multiclass-multioutput", "unknown"):
                 raise ValueError(
@@ -1066,11 +970,10 @@ class BaseConformalForest(BaseForest):
                     "supported: continuous, continuous-multioutput, binary, "
                     "multiclass, multilabel-indicator."
                 )
-                
-        
+
         self.feature_names_in_ = None
         if is_classifier(self):
-            self.oob_pred_ = self.predict_proba(X_cal)[:,:,None]
+            self.oob_pred_ = self.predict_proba(X_cal)[:, :, None]
             if hasattr(self, "classes_") and self.n_outputs_ == 1:
                 self.n_classes_ = self.n_classes_[0]
                 self.classes_ = self.classes_[0]
@@ -1078,12 +981,12 @@ class BaseConformalForest(BaseForest):
             self.oob_pred_ = FastRandomForestRegressor.predict(self, X_cal)
 
         self.feature_names_in_ = feature_names_in_
-        
+
         if y_cal.ndim == 1:
             y_cal = np.reshape(y_cal, (-1, 1))
         self.y_ = y_cal
         self._n_samples = self.y_.shape[0]
-        
+
         if is_classifier(self) and self.k_star_ is not None:
             self.train_giqs_ = self._compute_train_giqs(self.oob_pred_, self.y_)
 
@@ -1100,95 +1003,62 @@ class BaseConformalForest(BaseForest):
 
         The output of this method will be used to calculate the conformity
         scores of each point in `X`.
-        
+
         Parameters
         ----------
         X : array-like of shape (n_samples, n_features)
             The input samples.
-        
+
         Returns
         -------
         y_pred : ndarray
             The predicted values.
-        
+
         oob_pred : ndarray of shape (n_samples, n_classes, n_outputs) or /
                 (n_samples, 1, n_outputs)
             The out-of-bag predictions.
-    """
+        """
 
         # Prediction requires X to be in CSR format
         if issparse(X):
             X = X.tocsr()
 
         n_samples = X.shape[0]
-        n_outputs = self.n_outputs_
-        if is_classifier(self) and hasattr(self, "n_classes_"):
+        n_estimators = len(self.estimators_)
+        classifier = is_classifier(self)
+
+        if classifier and hasattr(self, "n_classes_"):
             n_classes = self.n_classes_
         else:
             n_classes = 1
-       
-        if n_classes == 1:
-            oob_pred_shape = (self._n_samples, n_samples)
-            y_pred_shape = (n_samples,)
-        else:
-            oob_pred_shape = (self._n_samples, n_samples, n_classes)
-            y_pred_shape = (n_samples, n_classes)
 
-        oob_pred = np.zeros(oob_pred_shape, dtype=np.float64)
+        if n_classes == 1:
+            y_pred_shape = (n_samples,)
+            y_pred_all_shape = (n_estimators, n_samples)
+        else:
+            y_pred_shape = (n_samples, n_classes)
+            y_pred_all_shape = (n_estimators, n_samples, n_classes)
+
         y_pred = np.zeros(y_pred_shape, dtype=np.float64)
+        y_pred_all = np.zeros(y_pred_all_shape, dtype=np.float64)
 
         n_jobs, _, _ = _partition_estimators(self.n_estimators, self.n_jobs)
-
         classifier = is_classifier(self)
-        if self.method == 'cv':
-            Parallel(n_jobs=n_jobs, verbose=self.verbose, require="sharedmem")(
-                delayed(_accumulate_prediction_cv)(
-                    e.predict_proba if classifier else e.predict,
-                    X,
-                    i,
-                    self.kfold_indices_,
-                    self._n_cv_folds,
-                    oob_pred,
-                    y_pred
-                )
-                for i, e in enumerate(self.estimators_)
+        Parallel(n_jobs=n_jobs, verbose=self.verbose, require="sharedmem")(
+            delayed(_accumulate_prediction)(
+                e.predict_proba if classifier else e.predict, X, i, y_pred_all
             )
-            oob_pred /= (len(self.estimators_) // self._n_cv_folds)
+            for i, e in enumerate(self.estimators_)
+        )
 
+        if classifier:
+            oob_pred = self.oob_matrix_ @ y_pred_all.reshape(n_estimators, -1)
+            oob_pred = oob_pred.reshape(self._n_samples, n_samples, n_classes)
+            oob_pred /= self._n_oob_pred[:, :, None]
         else:
-            n_oob_pred = np.zeros((self._n_samples, n_samples), dtype=np.int64)
-            lock = threading.Lock()
-            Parallel(n_jobs=n_jobs, verbose=self.verbose, require="sharedmem")(
-                delayed(_accumulate_prediction_bootstrap)(
-                    e.predict_proba if classifier else e.predict,
-                    X,
-                    e.random_state,
-                    self._n_samples,
-                    self._n_samples_bootstrap,
-                    oob_pred,
-                    n_oob_pred,
-                    y_pred,
-                    lock
-                )
-                for i, e in enumerate(self.estimators_)
-            )
+            oob_pred = self.oob_matrix_ @ y_pred_all / self._n_oob_pred
 
-            if (n_oob_pred == 0).any():
-                warn(
-                    (
-                        "Some inputs do not have OOB scores. This probably means "
-                         "too few trees were used to compute any reliable OOB "
-                        "estimates."
-                    ),
-                    UserWarning,
-                )
-                n_oob_pred[n_oob_pred == 0] = 1
-            if n_classes > 1:
-                oob_pred /= n_oob_pred[:, :, None]
-            else:
-                oob_pred /= n_oob_pred
-
-        y_pred /= len(self.estimators_)
+        y_pred = y_pred_all.mean(axis=-1)
 
         return y_pred, oob_pred
 
@@ -1203,10 +1073,10 @@ class BaseConformalForest(BaseForest):
         ----------
         append : bool, default=True
             If True, append the estimator to the list of estimators.
-        
+
         random_state : int, RandomState instance or None, default=None
             Controls the random seed used to initialize the base estimator.
-        
+
         Returns
         -------
         estimator : object
@@ -1232,17 +1102,17 @@ class BaseConformalForest(BaseForest):
 
     def _validate_X_predict(self, X):
         """Validate X whenever one tries to predict, apply, predict_proba.
-    
+
         Parameters
         ----------
         X : array-like of shape (n_samples, n_features)
             The input samples.
-        
+
         Returns
         -------
         X : array-like of shape (n_samples, n_features)
             The validated input.
-        
+
         Raises
         ------
         ValueError
@@ -1257,13 +1127,16 @@ class BaseConformalForest(BaseForest):
             dtype=DTYPE,
             accept_sparse="csr",
             reset=False,
-            ensure_all_finite="allow-nan"
+            ensure_all_finite="allow-nan",
         )
         if issparse(X) and (X.indices.dtype != np.intc or X.indptr.dtype != np.intc):
             raise ValueError("No support for np.int64 index based sparse matrices")
         return X
 
-class ConformalForestClassifier(ConformalClassifierMixin, BaseConformalForest, ForestClassifier):
+
+class ConformalForestClassifier(
+    ConformalClassifierMixin, BaseConformalForest, ForestClassifier
+):
     """
     Base class for forest of conformal trees-based classifiers.
 
@@ -1273,12 +1146,13 @@ class ConformalForestClassifier(ConformalClassifierMixin, BaseConformalForest, F
     Warning: This class should not be used directly. Use derived classes
     instead.
     """
+
     def __init__(
         self,
         estimator,
         *,
         n_estimators=100,
-        method='cv',
+        method="cv",
         cv=5,
         k_init="auto",
         lambda_init="auto",
@@ -1320,7 +1194,7 @@ class ConformalForestClassifier(ConformalClassifierMixin, BaseConformalForest, F
     @_fit_context(prefer_skip_nested_validation=True)
     def fit(self, X, y, alpha=0.05, calib_size=0.3, valid_size=0.3, sample_weight=None):
         """Fit the conformal forest classifier.
-    
+
         This method first finds optimal values for the regularization
         parameters k and lambda using the procedure from Angelopoulos et al.
         (2021), then fits the forest using either CV+,
@@ -1339,29 +1213,29 @@ class ConformalForestClassifier(ConformalClassifierMixin, BaseConformalForest, F
         ----------
         X : {array-like, sparse matrix} of shape (n_samples, n_features)
             Training data.
-        
+
         y : array-like of shape (n_samples,) or (n_samples, n_outputs)
             Target values (class labels).
-        
+
         alpha : float, default=0.05
             Desired miscoverage rate used to search for the optimal `k` and
             `lambda`. The prediction sets will be constructed to contains the
             true label with probability at least 1-alpha.
 
             This parameter will not be used when both `k_init` and
-            `lambda_init` are both numeric values. 
-        
+            `lambda_init` are both numeric values.
+
         calib_size : float, default=0.3
             Used when method='split'. The proportion of training samples to use
             for calibration.
-        
+
         valid_size : float, default=0.3
             The proportion of samples to use for validation when searching for
             the optimal lambda parameter.
-        
+
         sample_weight : array-like of shape (n_samples,), default=None
             Sample weights. If None, then samples are equally weighted.
-        
+
         Returns
         -------
         self : object
@@ -1372,15 +1246,19 @@ class ConformalForestClassifier(ConformalClassifierMixin, BaseConformalForest, F
         .. [1] Anastasios Nikolas Angelopoulos, Stephen Bates,
                Michael I. Jordan & Jitendra Malik, "Uncertainty Sets for Image
                Classifiers using Conformal Prediction", ICLR 2021.
-    """
+        """
 
-        self._set_lambda_star_and_k_star(X, y, alpha, calib_size, valid_size, sample_weight)
+        self._set_lambda_star_and_k_star(
+            X, y, alpha, calib_size, valid_size, sample_weight
+        )
         print(f"Fitting with k = {self.k_star_} and lambda = {self.lambda_star_}.")
         self._fit_wrapper(X, y, calib_size, sample_weight)
 
         return self
-        
-    def _set_lambda_star_and_k_star(self, X, y, alpha, calib_size, valid_size, sample_weight):
+
+    def _set_lambda_star_and_k_star(
+        self, X, y, alpha, calib_size, valid_size, sample_weight
+    ):
         """Set optimal values for lambda and k parameters and store them as
         attributes `lambda_star_` and `k_star_`, respectively.
 
@@ -1393,26 +1271,26 @@ class ConformalForestClassifier(ConformalClassifierMixin, BaseConformalForest, F
 
         The parameter search be performed only when constructing the model with
         `lambda_init='auto'` and/or `k_init='auto'`, otherwise they will be set
-        to the provided values. 
+        to the provided values.
 
         Parameters
         ----------
         X : array-like of shape (n_samples, n_features)
             The training input samples.
-        
+
         y : array-like of shape (n_samples,) or (n_samples, n_outputs)
             The target values.
-        
+
         alpha : float
             The desired miscoverage rate.
-        
+
         calib_size : float
             Used when `method='split'`. The proportion of training samples to
             use for split conformal prediction.
 
         valid_size : float
             The proportion of samples to use for validation of lambda.
-        
+
         sample_weight : array-like of shape (n_samples,), default=None
             Sample weights.
 
@@ -1449,29 +1327,21 @@ class ConformalForestClassifier(ConformalClassifierMixin, BaseConformalForest, F
                 true_label_scores = self.oob_pred_[
                     np.arange(len(self.y_)), self.y_.flatten().astype(int)
                 ]
-                scores_compare = (
-                    true_label_scores < self.oob_pred_[:, :, 0]
-                )
+                scores_compare = true_label_scores < self.oob_pred_[:, :, 0]
                 y_ranks = scores_compare.sum(axis=1).ravel()
-                self.k_star_ = np.quantile(
-                    y_ranks, 1 - alpha, method='higher'
-                ) + 1
+                self.k_star_ = np.quantile(y_ranks, 1 - alpha, method="higher") + 1
 
             if self.lambda_star_ is None:
                 X1, X2, y1, _, sw1, _ = train_test_split(
-                    X, 
-                    y, 
-                    sample_weight, 
-                    test_size=valid_size, 
-                    random_state=random_state, 
-                    stratify=y
+                    X,
+                    y,
+                    sample_weight,
+                    test_size=valid_size,
+                    random_state=random_state,
+                    stratify=y,
                 )
-                if not isinstance(self.cv, Integral):
-                    cv = len(self.cv)
-                else:
-                    cv = self.cv
                 best_sum_size = MAX_INT
-                for lambda_ in [0.001, 0.01, 0.1, 0.2, 0.5, 1]:  
+                for lambda_ in [0.001, 0.01, 0.1, 0.2, 0.5, 1]:
                     self.lambda_star_ = lambda_
                     self._fit_wrapper(X1, y1, calib_size, sw1)
                     _, y_set_pred = self.predict(X2, binary_output=True)
@@ -1480,7 +1350,7 @@ class ConformalForestClassifier(ConformalClassifierMixin, BaseConformalForest, F
                         best_sum_size = sum_size
                         best_lambda_ = lambda_
 
-                self.lambda_star_ = best_lambda_       
+                self.lambda_star_ = best_lambda_
 
     def _compute_train_giqs(self, oob_pred, y):
         """Compute the regularized generalized inverse quantile conformity
@@ -1497,15 +1367,15 @@ class ConformalForestClassifier(ConformalClassifierMixin, BaseConformalForest, F
         sets by how much their sizes are larger than k::
 
             π̂₁ + ... + π̂ⱼ₋₁ + U * π̂ⱼ + λ * max(0, j - k + 1).
-    
+
         Parameters
         ----------
         oob_pred : ndarray of shape (n_samples, n_classes, n_outputs)
             The out-of-bag predictions of the training samples.
-        
+
         y : ndarray of shape (n_samples,) or (n_samples, n_outputs)
             The true target values of the training samples.
-        
+
         Returns
         -------
         train_giqs : ndarray of shape (n_samples, n_classes)
@@ -1526,14 +1396,14 @@ class ConformalForestClassifier(ConformalClassifierMixin, BaseConformalForest, F
 
         y_score = oob_pred[np.arange(len(y)), y.flatten().astype(int)]
         pred_probs = oob_pred[:, :, 0]
-        y_compare = (y_score < pred_probs)
+        y_compare = y_score < pred_probs
         y_rank = y_compare.sum(axis=1).ravel()
         tau_before_y = (y_compare * pred_probs).sum(axis=1)
         tau = tau_before_y + y_score[:, 0]
 
         penalty = np.zeros((y.shape[0], y.shape[1]))
-        penalty[:, self.k_star_:] += self.lambda_star_
-    
+        penalty[:, self.k_star_ :] += self.lambda_star_
+
         if not self.randomized:
             train_giqs = tau + penalty[:, 0]
         else:
@@ -1542,20 +1412,21 @@ class ConformalForestClassifier(ConformalClassifierMixin, BaseConformalForest, F
             U = rng.random(size=tau.shape[0])
 
             # Decide whether to keep U; y might be removed if y_rank == 0
-            zero_idx = (y_rank == 0)
+            zero_idx = y_rank == 0
             if not self.allow_empty_sets:
                 train_giqs[zero_idx] = tau[zero_idx] + penalty[zero_idx, 0]
             else:
-                train_giqs[zero_idx] = (U[zero_idx] * tau[zero_idx]
-                                       + penalty[zero_idx, 0]) 
+                train_giqs[zero_idx] = (
+                    U[zero_idx] * tau[zero_idx] + penalty[zero_idx, 0]
+                )
             non_zero_idx = np.arange(y.shape[0])[~zero_idx]
             sum_penalty = np.array(
-                [penalty[i, 0:(y_rank[i] + 1)].sum() for i in non_zero_idx]
+                [penalty[i, 0 : (y_rank[i] + 1)].sum() for i in non_zero_idx]
             )
             train_giqs[non_zero_idx] = (
-                U[non_zero_idx] * y_score[:,0][non_zero_idx]
-                               + tau_before_y[non_zero_idx]
-                               + sum_penalty
+                U[non_zero_idx] * y_score[:, 0][non_zero_idx]
+                + tau_before_y[non_zero_idx]
+                + sum_penalty
             )
 
         return train_giqs
@@ -1585,10 +1456,10 @@ class ConformalForestClassifier(ConformalClassifierMixin, BaseConformalForest, F
         ----------
         oob_pred : ndarray of shape (n_train, n_classes, n_test)
             The out-of-bag predictions of the test data.
-        
+
         num_threads : int, default=4
             Number of threads to use for parallel computation.
-        
+
         Returns
         -------
         test_giqs : ndarray of shape (n_train, n_classes, n_test)
@@ -1614,7 +1485,7 @@ class ConformalForestClassifier(ConformalClassifierMixin, BaseConformalForest, F
             self.randomized,
             self.allow_empty_sets,
             num_threads,
-            seed
+            seed,
         )
 
         return test_giqs
@@ -1645,13 +1516,13 @@ class ConformalForestClassifier(ConformalClassifierMixin, BaseConformalForest, F
         ----------
         y_pred : ndarray of shape (n_samples, n_classes)
             The probability predictions of the test set.
-        
+
         tau : float, default=None
-            The generalized inverse quantile of the calibration set. 
-        
+            The generalized inverse quantile of the calibration set.
+
         num_threads : int, default=4
             Number of threads to use for parallel computation.
-        
+
         Returns
         -------
         y_set_pred : ndarray of shape (n_samples, n_classes)
@@ -1670,7 +1541,8 @@ class ConformalForestClassifier(ConformalClassifierMixin, BaseConformalForest, F
         y_set_pred = np.zeros_like(y_pred, dtype=np.float64)
         random_state = check_random_state(self.random_state)
         seed = random_state.get_state()[1][0]
-        _compute_predictions_split(y_pred,
+        _compute_predictions_split(
+            y_pred,
             y_set_pred,
             tau,
             self.k_star_,
@@ -1678,35 +1550,35 @@ class ConformalForestClassifier(ConformalClassifierMixin, BaseConformalForest, F
             self.randomized,
             self.allow_empty_sets,
             num_threads,
-            seed
+            seed,
         )
 
         return y_set_pred
 
     def predict(self, X, alpha=0.05, binary_output=False, num_threads=4):
         """Predict class labels and prediction sets for X.
-    
+
         Parameters
         ----------
         X : {array-like, sparse matrix} of shape (n_samples, n_features)
             The input samples to predict.
-        
+
         alpha : float, default=0.05
             Desired miscoverage rate. The prediction sets will be constructed
             to contains the true label with probability at least 1-alpha.
-        
+
         binary_output : bool, default=False
             If True, returns prediction sets as binary arrays where 1 indicates
             the class is in the set. If False, returns lists of class labels.
-        
+
         num_threads : int, default=4
             Number of threads to use for parallel computation.
-        
+
         Returns
         -------
         y_pred : ndarray of shape (n_samples,)
             The predicted class labels (point predictions).
-        
+
         y_set_pred : list of arrays or ndarray of shape (n_samples, n_classes)
             If binary_output=False, returns a list where each element contains
             the classes in the prediction set for that sample.
@@ -1716,9 +1588,7 @@ class ConformalForestClassifier(ConformalClassifierMixin, BaseConformalForest, F
         """
 
         if self.method in ["cv", "bootstrap"]:
-            y_pred, y_set_pred = self._predict_cv(
-                X, alpha, binary_output, num_threads
-            )
+            y_pred, y_set_pred = self._predict_cv(X, alpha, binary_output, num_threads)
         else:
             y_pred, y_set_pred = self._predict_split(X, alpha, binary_output)
 
@@ -1728,28 +1598,28 @@ class ConformalForestClassifier(ConformalClassifierMixin, BaseConformalForest, F
         """Predict using CV+ or Jackknife+-after-Bootstrap method.
 
         This method will be called during prediction when `method='cv'`.
-    
+
         Parameters
         ----------
         X : {array-like, sparse matrix} of shape (n_samples, n_features)
             The input samples to predict.
-        
+
         alpha : float, default=0.05
             Desired miscoverage rate. The prediction sets will be constructed
             to contains the true label with probability at least 1-alpha.
-        
+
         binary_output : bool, default=False
             If True, returns prediction sets as binary arrays where 1 indicates
             the class is in the set. If False, returns lists of class labels.
-        
+
         num_threads : int, default=4
             Number of threads to use for parallel computation.
-        
+
         Returns
         -------
         y_pred : ndarray of shape (n_samples,)
             The predicted class labels (point predictions).
-        
+
         y_set_pred : list of arrays or ndarray of shape (n_samples, n_classes)
             If binary_output=False, returns a list where each element contains
             the classes in the prediction set for that sample.
@@ -1766,42 +1636,43 @@ class ConformalForestClassifier(ConformalClassifierMixin, BaseConformalForest, F
 
         test_giqs = self._compute_test_giqs(oob_pred, num_threads)
         compare_giqs = (self.train_giqs_[:, None, None] < test_giqs).sum(axis=0)
-        compare_giqs = (compare_giqs < ((1 - alpha) * (self._n_samples + 1)))
+        compare_giqs = compare_giqs < ((1 - alpha) * (self._n_samples + 1))
 
         if binary_output:
-            y_set_pred = compare_giqs.astype(int)     
+            y_set_pred = compare_giqs.astype(int)
         else:
-            y_set_pred = [self.classes_.take(pred.nonzero()[0])
-                          for pred in compare_giqs]
-            
+            y_set_pred = [
+                self.classes_.take(pred.nonzero()[0]) for pred in compare_giqs
+            ]
+
         return y_pred, y_set_pred
 
     def _predict_split(self, X, alpha=0.05, binary_output=False, num_threads=4):
         """Predict using split conformal method.
 
         This method will be called during prediction when `method='split'`.
-    
+
         Parameters
         ----------
         X : {array-like, sparse matrix} of shape (n_samples, n_features)
             The input samples to predict.
-        
-        alpha : float, default=0.05  
+
+        alpha : float, default=0.05
             Desired miscoverage rate. The prediction sets will be constructed
             to contains the true label with probability at least 1-alpha.
-        
+
         binary_output : bool, default=False
             If True, returns prediction sets as binary arrays where 1 indicates
             the class is in the set. If False, returns lists of class labels.
-        
+
         num_threads : int, default=4
             Number of threads to use for parallel computation.
-        
+
         Returns
         -------
         y_pred : ndarray of shape (n_samples,)
             The predicted class labels (point predictions).
-        
+
         y_set_pred : list of arrays or ndarray of shape (n_samples, n_classes)
             If binary_output=False, returns a list where each element contains
             the classes in the prediction set for that sample.
@@ -1815,16 +1686,17 @@ class ConformalForestClassifier(ConformalClassifierMixin, BaseConformalForest, F
         y_pred_proba = self.predict_proba(X)
         y_pred = self.classes_.take(np.argmax(y_pred_proba, axis=1), axis=0)
 
-        tau = np.quantile(self.train_giqs_, 1 - alpha, method='higher')
+        tau = np.quantile(self.train_giqs_, 1 - alpha, method="higher")
         y_set_pred = self._predict_from_giqs(y_pred_proba, tau, num_threads)
-        if not binary_output:  
-            y_set_pred = [self.classes_.take(pred.nonzero()[0])
-                for pred in y_set_pred]
-        
+        if not binary_output:
+            y_set_pred = [self.classes_.take(pred.nonzero()[0]) for pred in y_set_pred]
+
         return y_pred, y_set_pred
 
 
-class ConformalForestRegressor(ConformalRegressorMixin, BaseConformalForest, ForestRegressor):
+class ConformalForestRegressor(
+    ConformalRegressorMixin, BaseConformalForest, ForestRegressor
+):
     """
     Base class for forest of conformal trees-based regressors.
 
@@ -1834,12 +1706,13 @@ class ConformalForestRegressor(ConformalRegressorMixin, BaseConformalForest, For
     Warning: This class should not be used directly. Use derived classes
     instead.
     """
+
     def __init__(
         self,
         estimator,
         *,
         n_estimators=100,
-        method='cv',
+        method="cv",
         cv=5,
         resample_n_estimators=True,
         estimator_params=tuple(),
@@ -1868,22 +1741,22 @@ class ConformalForestRegressor(ConformalRegressorMixin, BaseConformalForest, For
     @_fit_context(prefer_skip_nested_validation=True)
     def fit(self, X, y, alpha=0.05, calib_size=0.3, sample_weight=None):
         """Fit the conformal forest regressor.
-    
+
         Parameters
         ----------
         X : {array-like, sparse matrix} of shape (n_samples, n_features)
             Training data.
-        
+
         y : array-like of shape (n_samples,)
             Target values.
-        
+
         calib_size : float, default=0.3
             Used when method='split'. The proportion of training samples to use
             for calibration.
-        
+
         sample_weight : array-like of shape (n_samples,), default=None
             Sample weights.
-        
+
         Returns
         -------
         self : object
@@ -1891,32 +1764,30 @@ class ConformalForestRegressor(ConformalRegressorMixin, BaseConformalForest, For
         """
 
         self._fit_wrapper(X, y, calib_size, sample_weight)
-        self.residuals_ = np.abs(
-            self.y_.reshape(-1, 1) - self.oob_pred_.reshape(-1, 1)
-        )
+        self.residuals_ = np.abs(self.y_.reshape(-1, 1) - self.oob_pred_.reshape(-1, 1))
 
         return self
 
     def predict(self, X, alpha=0.05, num_threads=4):
         """Predict regression values and prediction intervals for X.
-    
+
         Parameters
         ----------
         X : {array-like, sparse matrix} of shape (n_samples, n_features)
             The input samples to predict.
-        
+
         alpha : float, default=0.05
             Desired error rate. The prediction intervals will be constructed to
             contain the true value with probability at least 1-alpha.
-        
+
         num_threads : int, default=4
             Number of threads to use for parallel computation.
-        
+
         Returns
         -------
         y_pred : ndarray of shape (n_samples,)
             The predicted regression values (point predictions).
-        
+
         y_intervals : ndarray of shape (n_samples, 2)
             Prediction intervals for each sample. First column contains lower
             bounds, second column contains upper bounds.
@@ -1933,24 +1804,24 @@ class ConformalForestRegressor(ConformalRegressorMixin, BaseConformalForest, For
         """Predict using CV+ or Jackknife+-after-Bootstrap method.
 
         This method will be called during prediction when `method='cv'`.
-    
+
         Parameters
         ----------
         X : {array-like, sparse matrix} of shape (n_samples, n_features)
             The input samples to predict.
-        
+
         alpha : float, default=0.05
             Desired error rate. The prediction intervals will be constructed to
             contain the true value with probability at least 1-alpha.
-        
+
         num_threads : int, default=4
             Number of threads to use for parallel computation.
-        
+
         Returns
         -------
         y_pred : ndarray of shape (n_samples,)
             The predicted regression values (point predictions).
-        
+
         y_intervals : ndarray of shape (n_samples, 2)
             Prediction intervals [lower, upper] for each sample computed using
             out-of-bag residuals.
@@ -1960,10 +1831,11 @@ class ConformalForestRegressor(ConformalRegressorMixin, BaseConformalForest, For
         X = self._validate_X_predict(X)
 
         y_pred, oob_pred = self._compute_oob_predictions(X)
-        
-        q_lo = np.quantile(
-            oob_pred - self.residuals_, alpha, method="lower", axis=0
-        )
+
+        # y_pred = y_pred[:, 0]
+        # oob_pred = oob_pred[:, :, 0]
+
+        q_lo = np.quantile(oob_pred - self.residuals_, alpha, method="lower", axis=0)
         q_hi = np.quantile(
             oob_pred + self.residuals_, 1 - alpha, method="higher", axis=0
         )
@@ -1973,21 +1845,21 @@ class ConformalForestRegressor(ConformalRegressorMixin, BaseConformalForest, For
         """Predict using split conformal method.
 
         This method will be called during prediction when `method='split'`.
-    
+
         Parameters
         ----------
         X : {array-like, sparse matrix} of shape (n_samples, n_features)
             The input samples to predict.
-        
+
         alpha : float, default=0.05
             Desired error rate. The prediction intervals will be constructed to
             contain the true value with probability at least 1-alpha.
-        
+
         Returns
         -------
         y_pred : ndarray of shape (n_samples,)
             The predicted regression values (point predictions).
-        
+
         y_intervals : ndarray of shape (n_samples, 2)
             Prediction intervals [lower, upper] for each sample computed using
             calibration set residuals.
@@ -1998,9 +1870,7 @@ class ConformalForestRegressor(ConformalRegressorMixin, BaseConformalForest, For
 
         y_pred = FastRandomForestRegressor.predict(self, X)
 
-        q = np.quantile(
-            self.residuals_[:, 0], 1 - alpha, method="higher"
-        )
+        q = np.quantile(self.residuals_[:, 0], 1 - alpha, method="higher")
 
         return y_pred, np.column_stack([y_pred - q, y_pred + q])
 
@@ -2069,7 +1939,7 @@ class CoverForestClassifier(ConformalForestClassifier):
         that contains more than k classes.
         If "auto", the value is chosen automatically during fitting.
 
-    lambda_init : float or "auto", default="auto" 
+    lambda_init : float or "auto", default="auto"
         Initial value for lambda parameter (regularization strength).
         If "auto", the value is chosen automatically during fitting.
 
@@ -2239,13 +2109,14 @@ class CoverForestClassifier(ConformalForestClassifier):
         The child estimator template used to create the collection of fitted
         sub-estimators.
 
-    estimators_ : list of `FastRandomForestClassifier` or list of \ `sklearn.tree.DecisionTreeClassifier`
+    estimators_ : list of `FastRandomForestClassifier` or \
+    `sklearn.tree.DecisionTreeClassifier`
         The collection of fitted sub-estimators.
 
     k_star_ : int
         The optimal k parameter found during fitting.
 
-    lambda_star_ : float 
+    lambda_star_ : float
         The optimal lambda parameter found during fitting.
 
     oob_pred_ : ndarray of shape (n_samples, n_classes, 1)
@@ -2337,24 +2208,14 @@ class CoverForestClassifier(ConformalForestClassifier):
     _parameter_constraints = {
         **RandomForestClassifier._parameter_constraints,
         **DecisionTreeClassifier._parameter_constraints,
-        "method": [
-            StrOptions({"bootstrap", "cv", "split"})
-        ],
-        "cv": [
-            Interval(Integral, 2, None, closed="left"),
-            "cv_object"
-        ],
-        "n_subestimators": [
-            Interval(Integral, 1, None, closed="left")
-        ],
-        "k_init": [
-            StrOptions({"auto"}),
-            Interval(Integral, 0, None, closed="left")
-        ],
+        "method": [StrOptions({"bootstrap", "cv", "split"})],
+        "cv": [Interval(Integral, 2, None, closed="left"), "cv_object"],
+        "n_subestimators": [Interval(Integral, 1, None, closed="left")],
+        "k_init": [StrOptions({"auto"}), Interval(Integral, 0, None, closed="left")],
         "lambda_init": [
             StrOptions({"auto"}),
             Interval(Real, 0, None, closed="right"),
-            Interval(Integral, 0, None, closed="left")
+            Interval(Integral, 0, None, closed="left"),
         ],
         "repeat_params_search": ["boolean"],
         "allow_empty_sets": ["boolean"],
@@ -2365,15 +2226,15 @@ class CoverForestClassifier(ConformalForestClassifier):
             dict,
             list,
             None,
-        ]
+        ],
     }
-    _parameter_constraints.pop("splitter") 
+    _parameter_constraints.pop("splitter")
 
     def __init__(
         self,
         n_estimators=10,
         *,
-        method='cv',
+        method="cv",
         cv=5,
         n_subestimators=100,
         k_init="auto",
@@ -2399,10 +2260,9 @@ class CoverForestClassifier(ConformalForestClassifier):
         warm_start=False,
         class_weight=None,
         ccp_alpha=0.0,
-        monotonic_cst=None
+        monotonic_cst=None,
     ):
-
-        estimator_params=(
+        estimator_params = (
             "criterion",
             "max_depth",
             "min_samples_split",
@@ -2417,7 +2277,6 @@ class CoverForestClassifier(ConformalForestClassifier):
         )
 
         if isinstance(method, str) and method == "cv":
-        
             estimator = FastRandomForestClassifier(
                 n_estimators=n_subestimators,
                 ccp_alpha=ccp_alpha,
@@ -2427,20 +2286,20 @@ class CoverForestClassifier(ConformalForestClassifier):
                 random_state=random_state,
                 warm_start=warm_start,
                 max_samples=max_samples,
-                class_weight=class_weight,                
+                class_weight=class_weight,
                 monotonic_cst=monotonic_cst,
             )
-            estimator_params +=  (
+            estimator_params += (
                 "bootstrap",
                 "class_weight",
                 "max_samples",
                 "n_estimators",
                 "n_jobs",
                 "oob_score",
-                "warm_start"
+                "warm_start",
             )
         else:
-            estimator=DecisionTreeClassifier()
+            estimator = DecisionTreeClassifier()
 
         super().__init__(
             estimator=estimator,
@@ -2460,7 +2319,7 @@ class CoverForestClassifier(ConformalForestClassifier):
             random_state=random_state,
             verbose=verbose,
             warm_start=warm_start,
-            class_weight=class_weight
+            class_weight=class_weight,
         )
 
         self.n_subestimators = n_subestimators
@@ -2475,6 +2334,7 @@ class CoverForestClassifier(ConformalForestClassifier):
         self.min_impurity_decrease = min_impurity_decrease
         self.monotonic_cst = monotonic_cst
         self.ccp_alpha = ccp_alpha
+
 
 class CoverForestRegressor(ConformalForestRegressor):
     """A conformal random forest regressor.
@@ -2493,7 +2353,7 @@ class CoverForestRegressor(ConformalForestRegressor):
 
     Note that another well-known method, Jackknife+, is a special case of CV+
     with one sample in each fold.
-    
+
     Parameters
     ----------
     n_estimators : int, default=10
@@ -2729,10 +2589,10 @@ class CoverForestRegressor(ConformalForestRegressor):
 
     References
     ----------
-    .. [1] Leo Breiman, "Random Forests", Machine Learning, 45(1), 5-32, 2001. 
+    .. [1] Leo Breiman, "Random Forests", Machine Learning, 45(1), 5-32, 2001.
     .. [2] Vladimir Vovk, Ilia Nouretdinov, Valery Manokhin & Alexander
            Gammerman, "Cross-conformal predictive distributions", 37-51,
-           COPA 2018.    
+           COPA 2018.
     .. [3] Rina Foygel Barber, Emmanuel J. Candès, Aaditya Ramdas &
            Ryan J. Tibshirani, "Predictive inference with the jackknife+",
            Ann. Statist. 49 (1) 486-507, 2021.
@@ -2755,25 +2615,18 @@ class CoverForestRegressor(ConformalForestRegressor):
     _parameter_constraints = {
         **RandomForestRegressor._parameter_constraints,
         **DecisionTreeRegressor._parameter_constraints,
-        "method": [
-            StrOptions({"bootstrap", "cv", "split"})
-        ],
-        "cv": [
-            Interval(Integral, 2, None, closed="left"),
-            "cv_object"
-        ],
-        "n_subestimators": [
-            Interval(Integral, 1, None, closed="left")
-        ],
-        "resample_n_estimators": ["boolean"]
+        "method": [StrOptions({"bootstrap", "cv", "split"})],
+        "cv": [Interval(Integral, 2, None, closed="left"), "cv_object"],
+        "n_subestimators": [Interval(Integral, 1, None, closed="left")],
+        "resample_n_estimators": ["boolean"],
     }
-    _parameter_constraints.pop("splitter") 
+    _parameter_constraints.pop("splitter")
 
     def __init__(
         self,
         n_estimators=10,
         *,
-        method='cv',
+        method="cv",
         cv=5,
         n_subestimators=100,
         resample_n_estimators=True,
@@ -2793,10 +2646,9 @@ class CoverForestRegressor(ConformalForestRegressor):
         verbose=0,
         warm_start=False,
         ccp_alpha=0.0,
-        monotonic_cst=None
+        monotonic_cst=None,
     ):
-
-        estimator_params=(
+        estimator_params = (
             "criterion",
             "max_depth",
             "min_samples_split",
@@ -2811,7 +2663,6 @@ class CoverForestRegressor(ConformalForestRegressor):
         )
 
         if isinstance(method, str) and method == "cv":
-        
             estimator = FastRandomForestRegressor(
                 n_estimators=n_subestimators,
                 ccp_alpha=ccp_alpha,
@@ -2823,16 +2674,16 @@ class CoverForestRegressor(ConformalForestRegressor):
                 max_samples=max_samples,
                 monotonic_cst=monotonic_cst,
             )
-            estimator_params +=  (
+            estimator_params += (
                 "bootstrap",
                 "max_samples",
                 "n_estimators",
                 "n_jobs",
                 "oob_score",
-                "warm_start"
+                "warm_start",
             )
         else:
-            estimator=DecisionTreeRegressor()
+            estimator = DecisionTreeRegressor()
 
         super().__init__(
             estimator=estimator,
@@ -2846,7 +2697,7 @@ class CoverForestRegressor(ConformalForestRegressor):
             n_jobs=n_jobs,
             random_state=random_state,
             verbose=verbose,
-            warm_start=warm_start
+            warm_start=warm_start,
         )
 
         self.n_subestimators = n_subestimators

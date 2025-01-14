@@ -1,8 +1,9 @@
 """
 Fast Random Forest prediction methods.
 
-Modifications of Random Forest Classifier/Regressor to skip input checks, as these checks are already parts of the fitting and prediction methods in
-CoveRFClassifier and CoveRFRegressor. 
+Modifications of Random Forest Classifier/Regressor to skip input checks, as these
+checks are already parts of the fitting and prediction methods in CoverForestClassifier
+and CoverForestRegressor.
 """
 
 # Authors: Gilles Louppe <g.louppe@gmail.com>
@@ -13,43 +14,43 @@ CoveRFClassifier and CoveRFRegressor.
 #
 # License: BSD 3 clause
 
-
-from abc import abstractmethod
 import threading
-from numbers import Integral, Real
+from abc import abstractmethod
+from numbers import Integral
 from warnings import warn
 
 import numpy as np
 import sklearn
 from scipy.sparse import issparse
-
 from sklearn.base import _fit_context
-from sklearn.exceptions import DataConversionWarning
 from sklearn.ensemble._forest import (
     BaseForest,
     ForestClassifier,
     ForestRegressor,
     _accumulate_prediction,
     _get_n_samples_bootstrap,
-    _partition_estimators
+    _partition_estimators,
 )
+from sklearn.exceptions import DataConversionWarning
 from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
 from sklearn.tree._tree import DOUBLE, DTYPE
 from sklearn.utils._param_validation import Interval, RealNotInt, StrOptions
 from sklearn.utils.parallel import Parallel, delayed
 from sklearn.utils.validation import (
-    check_random_state,
     _check_sample_weight,
     check_is_fitted,
-    validate_data
+    check_random_state,
+    validate_data,
 )
+
+MAX_INT = np.iinfo(np.int32).max
 
 
 class BaseFastForest(BaseForest):
     """
     This class extends sklearn's `BaseForest` to allow skipping input checks,
     as these checks are already parts of the fitting and prediction methods in
-    CoveRFClassifier and CoveRFRegressor. 
+    CoveRFClassifier and CoveRFRegressor.
 
     Warning: This class should not be used directly. Use derived classes
     instead.
@@ -95,9 +96,9 @@ class BaseFastForest(BaseForest):
             random_state=random_state,
             verbose=verbose,
             warm_start=warm_start,
-            max_samples=max_samples
+            max_samples=max_samples,
         )
-        
+
     @_fit_context(prefer_skip_nested_validation=True)
     def fit(self, X, y, sample_weight=None, check_input=False):
         """
@@ -140,14 +141,8 @@ class BaseFastForest(BaseForest):
                 y,
                 accept_sparse="csc",
                 dtype=DTYPE,
-                ensure_min_samples=2,                
-                ensure_all_finite=False
-            )
-            estimator = type(self.estimator)(criterion=self.criterion)
-            missing_values_in_feature_mask = (
-                estimator._compute_missing_values_in_feature_mask(
-                    X, estimator_name=self.__class__.__name__
-                )
+                ensure_min_samples=2,
+                ensure_all_finite=False,
             )
 
             if sample_weight is not None:
@@ -263,15 +258,15 @@ class BaseFastForest(BaseForest):
             )
 
             self.estimators_.extend(trees)
-    
+
         return self
-        
-        
+
+
 class FastRandomForestClassifier(BaseFastForest, ForestClassifier):
     """
-    This class extends sklearn's `RandomForestClassifier` to allow skipping 
+    This class extends sklearn's `RandomForestClassifier` to allow skipping
     input checks, as these checks are already parts of the fitting and
-    prediction methods in CoveRFClassifier and CoveRFRegressor. 
+    prediction methods in CoveRFClassifier and CoveRFRegressor.
     """
 
     _parameter_constraints: dict = {
@@ -385,7 +380,9 @@ class FastRandomForestClassifier(BaseFastForest, ForestClassifier):
             for j in np.atleast_1d(self.n_classes_)
         ]
         lock = threading.Lock()
-        sklearn.ensemble._forest.Parallel(n_jobs=n_jobs, verbose=self.verbose, require="sharedmem")(
+        sklearn.ensemble._forest.Parallel(
+            n_jobs=n_jobs, verbose=self.verbose, require="sharedmem"
+        )(
             delayed(_accumulate_prediction)(e.predict_proba, X, all_proba, lock)
             for e in self.estimators_
         )
@@ -401,9 +398,9 @@ class FastRandomForestClassifier(BaseFastForest, ForestClassifier):
 
 class FastRandomForestRegressor(BaseFastForest, ForestRegressor):
     """
-    This class extends sklearn's `RandomForestRegressor` to allow skipping 
+    This class extends sklearn's `RandomForestRegressor` to allow skipping
     input checks, as these checks are already parts of the fitting and
-    prediction methods in CoveRFClassifier and CoveRFRegressor. 
+    prediction methods in CoveRFClassifier and CoveRFRegressor.
     """
 
     _parameter_constraints: dict = {

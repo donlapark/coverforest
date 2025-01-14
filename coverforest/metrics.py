@@ -1,7 +1,6 @@
-from numbers import Integral, Real
+from numbers import Real
 
 import numpy as np
-
 from sklearn.utils._array_api import _average
 from sklearn.utils._param_validation import (
     Interval,
@@ -15,17 +14,11 @@ from sklearn.utils._param_validation import (
         "y_pred": ["array-like", "sparse matrix"],
         "beta": [Interval(Real, 0.0, None, closed="both")],
         "labels": ["array-like", None],
-        "sample_weight": ["array-like", None]
+        "sample_weight": ["array-like", None],
     },
     prefer_skip_nested_validation=True,
 )
-def classification_coverage_score(
-    y_true,
-    y_pred,
-    labels,
-    *,
-    sample_weight=None
-):
+def classification_coverage_score(y_true, y_pred, labels, *, sample_weight=None):
     """Compute the empirical coverage for classification prediction sets.
 
     The coverage score measures the proportion of true labels that are included
@@ -65,9 +58,9 @@ def classification_coverage_score(
     0.66...
     """
 
-    class_to_idx = {c:i for i, c in enumerate(labels)}
+    class_to_idx = {c: i for i, c in enumerate(labels)}
     y_idx = np.vectorize(class_to_idx.__getitem__)(y_true)
-    is_in_y_pred = y_pred[np.arange(len(labels)), y_idx]
+    is_in_y_pred = y_pred[np.arange(len(y_pred)), y_idx]
 
     return float(_average(is_in_y_pred, weights=sample_weight))
 
@@ -76,7 +69,7 @@ def classification_coverage_score(
     {
         "y_true": ["array-like", "sparse matrix"],
         "y_pred": ["array-like", "sparse matrix"],
-        "sample_weight": ["array-like", None]
+        "sample_weight": ["array-like", None],
     },
     prefer_skip_nested_validation=True,
 )
@@ -115,16 +108,11 @@ def average_set_size_loss(y_pred):
     {
         "y_true": ["array-like", "sparse matrix"],
         "y_pred": ["array-like", "sparse matrix"],
-        "sample_weight": ["array-like", None]
+        "sample_weight": ["array-like", None],
     },
     prefer_skip_nested_validation=True,
 )
-def regression_coverage_score(
-    y_true,
-    y_pred,
-    *,
-    sample_weight=None
-):
+def regression_coverage_score(y_true, y_pred, *, sample_weight=None):
     """Compute the empirical coverage for regression prediction intervals.
 
     The coverage score measures the proportion of true values that fall
@@ -167,7 +155,7 @@ def regression_coverage_score(
     {
         "y_true": ["array-like", "sparse matrix"],
         "y_pred": ["array-like", "sparse matrix"],
-        "sample_weight": ["array-like", None]
+        "sample_weight": ["array-like", None],
     },
     prefer_skip_nested_validation=True,
 )

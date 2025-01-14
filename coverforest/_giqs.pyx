@@ -53,18 +53,18 @@ cdef extern from *:
     """
     #include <algorithm>
     #include <vector>
-    
+
     void argsort(int32_t* indices, const double* scores, size_t n) {
         std::vector<int32_t> idx(n);
         for (size_t i = 0; i < n; ++i) {
             idx[i] = static_cast<int32_t>(i);
         }
-        
+
         std::sort(idx.begin(), idx.end(),
                  [scores](int32_t i1, int32_t i2) {
                      return scores[i1] > scores[i2];
                  });
-                 
+
         // Copy sorted indices back to output array
         for (size_t i = 0; i < n; ++i) {
             indices[i] = idx[i];
@@ -77,6 +77,7 @@ cdef extern from *:
 @cython.wraparound(False)
 cdef void _argsort(int32_t* indices_ptr, float64_t* scores_ptr, size_t n) noexcept nogil:
     argsort(indices_ptr, scores_ptr, n)
+
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
@@ -183,7 +184,7 @@ def _compute_test_giqs_cv(const float64_t[:,:,::1] oob_pred,
             sorted_scores = <float64_t*>malloc(n_samples * n_test * n_classes * sizeof(float64_t))
             for i in prange(n_samples):
                 for j in range(n_test):
-                    ij_idx = i * samples_stride + j * n_classes    
+                    ij_idx = i * samples_stride + j * n_classes
                     memcpy(temp, &oob_pred[i, j, 0], n_classes * sizeof(float64_t))
                     _argsort(indices, temp, n_classes)
                     for k in range(n_classes):
@@ -194,10 +195,10 @@ def _compute_test_giqs_cv(const float64_t[:,:,::1] oob_pred,
                     out[i, j, 0] = sorted_scores[ij_idx]
                     for k in range(1, n_classes):
                         out[i, j, k] += out[i, j, k - 1] + sorted_scores[ij_idx + k]
-                        
+
             free(temp)
             free(indices)
-    
+
             if not randomized:
                 for i in prange(n_samples):
                     for j in range(n_test):
@@ -214,7 +215,7 @@ def _compute_test_giqs_cv(const float64_t[:,:,::1] oob_pred,
 
                 memset(penalty, 0, k_star * sizeof(float64_t))
                 for k in prange(k_star, n_classes):
-                    penalty[k] = lambda_star * (k - k_star + 1) 
+                    penalty[k] = lambda_star * (k - k_star + 1)
 
                 for i in prange(n_samples):
                     for j in range(n_test):
@@ -230,7 +231,7 @@ def _compute_test_giqs_cv(const float64_t[:,:,::1] oob_pred,
 
                         for k in range(n_classes):
                             out[i, j, I[ij_idx + k]] = E[ij_idx + k]
-                            
+
                 free(I)
                 free(E)
                 free(penalty)
@@ -345,7 +346,7 @@ def _compute_predictions_split(const float64_t[:,::1] oob_pred,
             L = <int32_t*>malloc(n_samples * sizeof(int32_t))
             temp = <float64_t*>malloc(n_classes * sizeof(float64_t))
             #predictions = <uint8_t*>malloc(n_samples * n_classes * sizeof(uint8_t))
-            
+
             for k in prange(n_classes):
                 if k >= k_star:
                     penalties[k] = lambda_star
@@ -362,7 +363,7 @@ def _compute_predictions_split(const float64_t[:,::1] oob_pred,
                     temp[j] = oob_pred[i, j]
 
                 _argsort(indices + inc, temp, n_classes)
-                
+
                 sorted_scores[inc] = oob_pred[i, indices[inc]]
                 cumsum[inc] = sorted_scores[inc]
                 for j in range(1, n_classes):
@@ -375,7 +376,7 @@ def _compute_predictions_split(const float64_t[:,::1] oob_pred,
                     if (cumsum[inc + j] + penalties_cumsum[j]) <= tau:
                         L[i] = j + 2
                 L[i] = min(L[i], n_classes)
-            
+
             free(temp)
             free(penalties_cumsum)
             free(sorted_scores)
@@ -397,12 +398,12 @@ def _compute_predictions_split(const float64_t[:,::1] oob_pred,
                         numerator -= cumsum[inc + j - 1]
                     numerator = numerator - penalties_cumsum[j]
                     denominator = sorted_scores[inc + j] + penalties[j]
-                    
+
                     if denominator != 0:
                         V[i] = numerator / denominator
                     else:
                         V[i] = 0
-                        
+
                     L[i] = L[i] - (U[i] >= V[i])
 
                 free(V)
