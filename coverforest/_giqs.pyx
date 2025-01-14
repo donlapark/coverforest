@@ -346,15 +346,15 @@ def _compute_predictions_split(const float64_t[:,::1] oob_pred,
             temp = <float64_t*>malloc(n_classes * sizeof(float64_t))
             #predictions = <uint8_t*>malloc(n_samples * n_classes * sizeof(uint8_t))
             
-            for k in range(n_classes):
+            for k in prange(n_classes):
                 if k >= k_star:
                     penalties[k] = lambda_star
                 else:
                     penalties[k] = 0
 
-            penalties_cumsum[0] = penalties[0]
-            for k in range(1, n_classes):
-                penalties_cumsum[k] = penalties_cumsum[k - 1] + penalties[k]
+            memset(penalties_cumsum, 0, k_star * sizeof(float64_t))
+            for k in prange(k_star, n_classes):
+                penalties_cumsum[k] = lambda_star * (k - k_star + 1)
 
             for i in prange(n_samples):
                 inc = i * n_classes

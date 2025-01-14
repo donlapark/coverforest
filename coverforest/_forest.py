@@ -31,6 +31,7 @@ Tibshirani (2021).
 #
 # License: BSD 3 clause
 
+import threading
 from abc import ABCMeta, abstractmethod
 from copy import deepcopy
 from numbers import Integral, Real
@@ -49,6 +50,7 @@ from sklearn.base import (
 from sklearn.model_selection import KFold, train_test_split
 
 from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
+from sklearn.ensemble._base import _partition_estimators
 from sklearn.ensemble._forest import (
     BaseForest,
     ForestClassifier,
@@ -74,14 +76,14 @@ from sklearn.utils.validation import (
     _get_feature_names
 )
 
-from metrics import (
+from .metrics import (
     average_interval_length_loss,
     average_set_size_loss,
     classification_coverage_score,
     regression_coverage_score
 )
-from _fast_random_forest import BaseFastForest, FastRandomForestClassifier, FastRandomForestRegressor
-from _giqs import _compute_test_giqs_cv, _compute_predictions_split
+from ._fast_random_forest import BaseFastForest, FastRandomForestClassifier, FastRandomForestRegressor
+from ._giqs import _compute_test_giqs_cv, _compute_predictions_split
 
 
 MAX_INT = np.iinfo(np.int32).max
@@ -97,11 +99,11 @@ def _generate_sample_indices(random_state, kfold_indices, k, tree_idx, n_samples
     ----------
     random_state : int, RandomState instance or None.
         The random number generator instance.
-    kfold_indices : list of tuples of ndarrays
+    kfold_indices : list of tuples of ndarrays or None
         Pairs of train-test indices obtained from k-fold cross-validation.
-    k : int
+    k : int or None
         Current fold number.
-    tree_idx : int
+    tree_idx : int or None
         Index of the current tree.
     n_samples : int
         Total number of samples.
@@ -128,7 +130,8 @@ def _generate_sample_indices(random_state, kfold_indices, k, tree_idx, n_samples
 
 
 def _generate_unsampled_indices(
-        random_state, tree_idx, n_samples, n_samples_bootstrap):
+        random_state, n_samples, n_samples_bootstrap
+    ):
     """Generate indices for unsampled (out-of-bag) samples.
 
     Parameters
@@ -149,7 +152,7 @@ def _generate_unsampled_indices(
     """
 
     sample_indices = _generate_sample_indices(
-        random_state, None, None, tree_idx, n_samples, n_samples_bootstrap, method='oob'
+        random_state, None, None, None, n_samples, n_samples_bootstrap, method='oob'
     )
     sample_counts = np.bincount(sample_indices, minlength=n_samples)
     unsampled_mask = sample_counts == 0
@@ -189,9 +192,10 @@ def _parallel_build_trees(
     method : {'cv', 'bootstrap', 'split'}
         Subsampling method used for conformal predictions.
     kfold_indices : list of tuples of ndarrays
-        Pairs of train-test indices obtained from k-fold cross-validation.
+        Used when `method='cv'`. Pairs of train-test indices obtained from
+        k-fold cross-validation.
     k : int
-        Current fold number.
+        Used when `method='cv'`. Current fold number.
     sample_weight : array-like of shape (n_samples,) or None
         Sample weights.
     tree_idx : int
@@ -206,7 +210,7 @@ def _parallel_build_trees(
     n_samples : int or None, default=None
         Number of samples in the dataset.
     n_samples_bootstrap : int or None, default=None
-        Number of samples to draw for bootstrap.
+        Used when `method='bootstrap'`. Number of samples to draw for bootstrap.
     n_classes : int or None, default=None
         Number of classes in the dataset.
 
@@ -251,6 +255,63 @@ def _parallel_build_trees(
     tree.fit(X, y, sample_weight=curr_sample_weight, check_input=False)
 
     return tree
+
+
+def _accumulate_prediction_cv(
+        predict,
+        X,
+        i,
+        kfold_indices,
+        n_folds,
+        out,
+        y_pred
+    ):
+    """
+    A utility function for parallel predictions with `method='cv'`.
+
+    Add the tree's predictions on `X` to every out-of-box training rows in
+    `out`.
+
+    Add the tree's predictions on `X` to `y_pred`.
+    """
+    prediction = predict(X, check_input=False)
+    indices = kfold_indices[i % n_folds][1]
+        
+    # no lock required for disjoint subsets
+    y_pred += prediction
+    for i in indices:
+        out[i] += prediction
+
+
+def _accumulate_prediction_bootstrap(
+        predict,
+        X,
+        random_state,
+        n_samples,
+        n_samples_bootstrap,
+        out,
+        n_out,
+        y_pred,
+        lock
+    ):
+    """
+    A utility function for parallel predictions with `method='bootstrap'`.
+
+    Add the tree's predictions on `X` to every out-of-box training rows
+    in `out`.
+
+    Add the tree's predictions on `X` to `y_pred`.
+    """
+    prediction = predict(X, check_input=False)
+    indices = _generate_unsampled_indices(
+        random_state, n_samples, n_samples_bootstrap
+    )
+
+    with lock:
+        y_pred += prediction
+        for i in indices:
+            out[i] += prediction
+            n_out[i] += 1
 
 
 class ConformalClassifierMixin:
@@ -878,7 +939,9 @@ class BaseConformalForest(BaseForest):
                 unsampled_indices = self.kfold_indices_[i % self._n_cv_folds][1]
             else:
                 unsampled_indices = _generate_unsampled_indices(
-                    tree.random_state, i, self._n_samples, self._n_samples_bootstrap
+                    tree.random_state,
+                    self._n_samples,
+                    self._n_samples_bootstrap
                 )
 
             predict_func = (tree.predict_proba if hasattr(tree, "predict_proba")
@@ -1074,29 +1137,42 @@ class BaseConformalForest(BaseForest):
         oob_pred = np.zeros(oob_pred_shape, dtype=np.float64)
         y_pred = np.zeros(y_pred_shape, dtype=np.float64)
 
-        if self.method != 'cv':
-            n_oob_pred = np.zeros((self._n_samples, n_samples), dtype=np.int64)
-        
-        for i, estimator in enumerate(self.estimators_):
+        n_jobs, _, _ = _partition_estimators(self.n_estimators, self.n_jobs)
 
-            if self.method == 'cv':
-                unsampled_indices = self.kfold_indices_[i % self._n_cv_folds][1]
-            else:
-                unsampled_indices = _generate_unsampled_indices(
-                    estimator.random_state, i, self._n_samples, self._n_samples_bootstrap
-                )
-                n_oob_pred[unsampled_indices, :] += 1
-            
-            pred_func = (estimator.predict_proba if is_classifier(self) else
-                            estimator.predict)
-            y_single_pred = pred_func(X, check_input=False)
-
-            oob_pred[unsampled_indices, ...] += y_single_pred[None, ...]
-            y_pred += y_single_pred
-
+        classifier = is_classifier(self)
         if self.method == 'cv':
+            Parallel(n_jobs=n_jobs, verbose=self.verbose, require="sharedmem")(
+                delayed(_accumulate_prediction_cv)(
+                    e.predict_proba if classifier else e.predict,
+                    X,
+                    i,
+                    self.kfold_indices_,
+                    self._n_cv_folds,
+                    oob_pred,
+                    y_pred
+                )
+                for i, e in enumerate(self.estimators_)
+            )
             oob_pred /= (len(self.estimators_) // self._n_cv_folds)
+
         else:
+            n_oob_pred = np.zeros((self._n_samples, n_samples), dtype=np.int64)
+            lock = threading.Lock()
+            Parallel(n_jobs=n_jobs, verbose=self.verbose, require="sharedmem")(
+                delayed(_accumulate_prediction_bootstrap)(
+                    e.predict_proba if classifier else e.predict,
+                    X,
+                    e.random_state,
+                    self._n_samples,
+                    self._n_samples_bootstrap,
+                    oob_pred,
+                    n_oob_pred,
+                    y_pred,
+                    lock
+                )
+                for i, e in enumerate(self.estimators_)
+            )
+
             if (n_oob_pred == 0).any():
                 warn(
                     (
@@ -1528,6 +1604,8 @@ class ConformalForestClassifier(ConformalClassifierMixin, BaseConformalForest, F
         """
 
         test_giqs = np.zeros_like(oob_pred, dtype=np.float64)
+        random_state = check_random_state(self.random_state)
+        seed = random_state.get_state()[1][0]
         _compute_test_giqs_cv(
             oob_pred,
             test_giqs,
@@ -1536,7 +1614,7 @@ class ConformalForestClassifier(ConformalClassifierMixin, BaseConformalForest, F
             self.randomized,
             self.allow_empty_sets,
             num_threads,
-            self.random_state
+            seed
         )
 
         return test_giqs
@@ -1590,6 +1668,8 @@ class ConformalForestClassifier(ConformalClassifierMixin, BaseConformalForest, F
         """
 
         y_set_pred = np.zeros_like(y_pred, dtype=np.float64)
+        random_state = check_random_state(self.random_state)
+        seed = random_state.get_state()[1][0]
         _compute_predictions_split(y_pred,
             y_set_pred,
             tau,
@@ -1598,7 +1678,7 @@ class ConformalForestClassifier(ConformalClassifierMixin, BaseConformalForest, F
             self.randomized,
             self.allow_empty_sets,
             num_threads,
-            self.random_state
+            seed
         )
 
         return y_set_pred

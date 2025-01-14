@@ -80,10 +80,7 @@ def classification_coverage_score(
     },
     prefer_skip_nested_validation=True,
 )
-def average_set_size_loss(
-    y_pred,
-    *
-):
+def average_set_size_loss(y_pred):
     """Compute the average size of classification prediction sets.
 
     For each sample, the set size is the number of classes included in
@@ -111,7 +108,7 @@ def average_set_size_loss(
     1.333...
     """
 
-    return float(_average(y_pred.sum(axis=1), weights=sample_weight))
+    return float(_average(y_pred.sum(axis=1)))
 
 
 @validate_params(
@@ -174,10 +171,7 @@ def regression_coverage_score(
     },
     prefer_skip_nested_validation=True,
 )
-def average_interval_length_loss(
-    y_pred,
-    *
-):
+def average_interval_length_loss(y_pred):
     """Compute the average length of regression prediction intervals.
 
     For each sample, the interval length is the difference between
@@ -205,4 +199,4 @@ def average_interval_length_loss(
 
     low = y_pred[:, 0]
     high = y_pred[:, 1]
-    return float(_average(high - low, weights=sample_weight))
+    return float(_average(high - low))
