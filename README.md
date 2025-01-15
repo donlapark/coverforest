@@ -1,4 +1,4 @@
-CoverForest - A template for scikit-learn contributions
+coverforest - Random Forest with Conformal Predictions
 ============================================================
 
 ![tests](https://github.com/scikit-learn-contrib/coverforest/actions/workflows/python-app.yml/badge.svg)
