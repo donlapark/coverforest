@@ -52,8 +52,7 @@ class BaseFastForest(BaseForest):
     as these checks are already parts of the fitting and prediction methods in
     CoveRFClassifier and CoveRFRegressor.
 
-    Warning: This class should not be used directly. Use derived classes
-    instead.
+    Warning: This class should not be used directly. Use the derived classes instead.
     """
 
     _parameter_constraints: dict = {
@@ -267,6 +266,8 @@ class FastRandomForestClassifier(BaseFastForest, ForestClassifier):
     This class extends sklearn's `RandomForestClassifier` to allow skipping
     input checks, as these checks are already parts of the fitting and
     prediction methods in CoveRFClassifier and CoveRFRegressor.
+
+    Warning: This class should not be used directly. Use the main methods instead.
     """
 
     _parameter_constraints: dict = {
@@ -401,6 +402,8 @@ class FastRandomForestRegressor(BaseFastForest, ForestRegressor):
     This class extends sklearn's `RandomForestRegressor` to allow skipping
     input checks, as these checks are already parts of the fitting and
     prediction methods in CoveRFClassifier and CoveRFRegressor.
+
+    Warning: This class should not be used directly. Use the main methods instead.
     """
 
     _parameter_constraints: dict = {

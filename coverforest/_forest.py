@@ -1152,6 +1152,7 @@ class ConformalForestClassifier(
     instead.
     """
 
+    @abstractmethod
     def __init__(
         self,
         estimator,
@@ -1568,9 +1569,10 @@ class ConformalForestClassifier(
         X : {array-like, sparse matrix} of shape (n_samples, n_features)
             The input samples to predict.
 
-        alpha : float, default=0.05
+        alpha : float or None, default=None
             Desired miscoverage rate. The prediction sets will be constructed
-            to contains the true label with probability at least 1-alpha.
+            to contains the true label with probability at least 1-alpha. If None,
+            only returns y_pred.
 
         binary_output : bool, default=False
             If True, returns prediction sets as binary arrays where 1 indicates
@@ -1609,9 +1611,10 @@ class ConformalForestClassifier(
         X : {array-like, sparse matrix} of shape (n_samples, n_features)
             The input samples to predict.
 
-        alpha : float, default=0.05
+        alpha : float or None, default=None
             Desired miscoverage rate. The prediction sets will be constructed
-            to contains the true label with probability at least 1-alpha.
+            to contains the true label with probability at least 1-alpha. If None,
+            only returns y_pred.
 
         binary_output : bool, default=False
             If True, returns prediction sets as binary arrays where 1 indicates
@@ -1664,9 +1667,10 @@ class ConformalForestClassifier(
         X : {array-like, sparse matrix} of shape (n_samples, n_features)
             The input samples to predict.
 
-        alpha : float, default=0.05
+        alpha : float or None, default=None
             Desired miscoverage rate. The prediction sets will be constructed
-            to contains the true label with probability at least 1-alpha.
+            to contains the true label with probability at least 1-alpha. If None,
+            only returns y_pred.
 
         binary_output : bool, default=False
             If True, returns prediction sets as binary arrays where 1 indicates
@@ -1719,6 +1723,7 @@ class ConformalForestRegressor(
     instead.
     """
 
+    @abstractmethod
     def __init__(
         self,
         estimator,
@@ -1788,9 +1793,10 @@ class ConformalForestRegressor(
         X : {array-like, sparse matrix} of shape (n_samples, n_features)
             The input samples to predict.
 
-        alpha : float, default=0.05
+        alpha : float or None, default=None
             Desired error rate. The prediction intervals will be constructed to
-            contain the true value with probability at least 1-alpha.
+            contain the true value with probability at least 1-alpha. If None,
+            only returns y_pred.
 
         num_threads : int, default=4
             Number of threads to use for parallel computation.
@@ -1822,9 +1828,10 @@ class ConformalForestRegressor(
         X : {array-like, sparse matrix} of shape (n_samples, n_features)
             The input samples to predict.
 
-        alpha : float, default=0.05
+        alpha : float or None, default=None
             Desired error rate. The prediction intervals will be constructed to
-            contain the true value with probability at least 1-alpha.
+            contain the true value with probability at least 1-alpha. If None,
+            only returns y_pred.
 
         num_threads : int, default=4
             Number of threads to use for parallel computation.
@@ -1865,9 +1872,10 @@ class ConformalForestRegressor(
         X : {array-like, sparse matrix} of shape (n_samples, n_features)
             The input samples to predict.
 
-        alpha : float, default=0.05
+        alpha : float or None, default=None
             Desired error rate. The prediction intervals will be constructed to
-            contain the true value with probability at least 1-alpha.
+            contain the true value with probability at least 1-alpha. If None,
+            only returns y_pred.
 
         Returns
         -------
@@ -2247,7 +2255,7 @@ class CoverForestClassifier(ConformalForestClassifier):
 
     def __init__(
         self,
-        n_estimators=10,
+        n_estimators=5,
         *,
         method="cv",
         cv=5,
@@ -2644,7 +2652,7 @@ class CoverForestRegressor(ConformalForestRegressor):
 
     def __init__(
         self,
-        n_estimators=10,
+        n_estimators=5,
         *,
         method="cv",
         cv=5,

@@ -1,6 +1,5 @@
-"""This file will just show how to write tests for the template classes."""
+"""This file will just show how to write tests for the main classes."""
 
-import numpy as np
 import pytest
 from sklearn.datasets import load_iris
 
@@ -25,4 +24,5 @@ def test_template_classifier(data):
     assert hasattr(clf, "y_")
 
     y_pred = clf.predict(X)
-    assert y_pred.shape == (X.shape[0], np.unique(y).shape[0])
+    assert y_pred.ndim == 1
+    assert y_pred.shape[0] == X.shape[0]
