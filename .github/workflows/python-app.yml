@@ -34,10 +34,11 @@ jobs:
           cache: true
           auth-host: prefix.dev
           auth-token: ${{ secrets.PREFIX_DEV_TOKEN }}
+          manifest-path: pyproject.toml
 
-      - name: Run tests
-        run: pixi run -e test $COV
-
-      - uses: codecov/codecov-action@v4
+      - name: Run Tests
+        run: pixi run -e test
+      - name: Publish Code Coverage
+        uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
