@@ -45,7 +45,7 @@ jobs:
           auth-token: ${{ secrets.PREFIX_DEV_TOKEN }}
 
       - name: Install numpy
-        run: pip install numpy=${{ matrix.numpy-version }}
+        run: pip install numpy==${{ matrix.numpy-version }}
 
       - name: Run tests
         run: pixi run -e ${{ matrix.environment }} test
