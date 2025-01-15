@@ -379,6 +379,7 @@ class ConformalRegressorMixin:
     - Jackknife+
     - CV+
     - Jackknife+-after-Bootstrap
+
     Each method provides valid coverage guarantees.
 
     Examples
@@ -1953,7 +1954,8 @@ class CoverForestClassifier(ConformalForestClassifier):
         - If None (default), then draw `X.shape[0]` samples.
         - If int, then draw `max_samples` samples.
         - If float, then draw `max(round(n_samples * max_samples), 1)` samples.
-          Thus, `max_samples` should be in the interval `(0.0, 1.0]`.
+
+        Thus, `max_samples` should be in the interval `(0.0, 1.0]`.
         When `method='cv'`, the value will be passed on to the
         `FastRandomForestClassifier` sub-estimators.
 
@@ -2464,8 +2466,8 @@ class CoverForestRegressor(ConformalForestRegressor):
 
         - If int, then consider `min_samples_leaf` as the minimum number.
         - If float, then `min_samples_leaf` is a fraction and
-          `ceil(min_samples_leaf * n_samples)` are the minimum
-          number of samples for each node.
+          `ceil(min_samples_leaf * n_samples)` are the minimum number of
+          samples for each node.
 
     min_weight_fraction_leaf : float, default=0.0
         The minimum weighted fraction of the sum total of weights (of all
@@ -2609,7 +2611,7 @@ class CoverForestRegressor(ConformalForestRegressor):
         regressor from scikit-learn.
 
     Notes
-    _____
+    -----
     The conformal prediction with K-fold cross-validation (CV+) method was
     proposed by Romano, Sesia & Candès (2020). The conformal prediction with
     bootstrap subsampling (Jackknife+-after-Bootstrap) was proposed by Kim, Xu

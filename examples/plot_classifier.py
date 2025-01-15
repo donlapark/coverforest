@@ -3,16 +3,25 @@
 Plotting Template Classifier
 ============================
 
-An example plot of :class:`coverforest.template.TemplateClassifier`
+An example plot of :class:`coverforest.CoverForestClassifier`
 """
 
 # %%
 # Train our classifier on very simple dataset
-from coverforest import TemplateClassifier
+from sklearn.datasets import make_classification
 
-X = [[0, 0], [1, 1]]
-y = [0, 1]
-clf = TemplateClassifier().fit(X, y)
+from coverforest import CoverForestClassifier
+
+X, y = make_classification(
+    n_samples=200,
+    n_features=2,
+    n_informative=2,
+    n_redundant=0,
+    random_state=0,
+    shuffle=False,
+)
+clf = CoverForestClassifier(n_estimators=10, method="cv", random_state=0)
+clf.fit(X, y)
 
 # %%
 # Create a test dataset

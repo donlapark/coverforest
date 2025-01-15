@@ -8,41 +8,43 @@ This is an example on how to document the API of your own project.
 
 .. currentmodule:: coverforest
 
-Estimator
+Classifier
+==========
+
+.. autosummary::
+   :toctree: generated/
+   :template: class.rst
+
+   CoverForestClassifier
+
+Regressor
 =========
 
 .. autosummary::
    :toctree: generated/
    :template: class.rst
 
-   TemplateEstimator
+   CoverForestRegressor
 
-Transformer
-===========
-
-.. autosummary::
-   :toctree: generated/
-   :template: class.rst
-
-   TemplateTransformer
-
-Predictor
-=========
+Fast Random Forest
+==================
 
 .. autosummary::
    :toctree: generated/
    :template: class.rst
 
-    TemplateClassifier
+   _fast_random_forest.FastRandomForestClassifier
+   _fast_random_forest.FastRandomForestRegressor
 
 
-Utilities
-=========
+metrics
+=======
 
 .. autosummary::
    :toctree: generated/
    :template: functions.rst
 
-     utils.discovery.all_estimators
-     utils.discovery.all_displays
-     utils.discovery.all_functions
+     metrics.average_interval_length_loss
+     metrics.average_set_size_loss
+     metrics.classification_coverage_score
+     metrics.regression_coverage_score
