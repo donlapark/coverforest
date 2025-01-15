@@ -15,7 +15,7 @@ sys.path.insert(0, os.path.abspath("../.."))
 
 from sklearn.datasets import make_classification
 
-from ..coverforest._forest import CoverForestClassifier
+from coverforest._forest import CoverForestClassifier
 
 X, y = make_classification(
     n_samples=200,
