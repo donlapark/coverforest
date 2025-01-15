@@ -12,6 +12,7 @@ jobs:
   build:
     strategy:
       matrix:
+        environment: [test]
         include:
           - os: ubuntu-latest
             python-version: "3.9"
@@ -35,10 +36,11 @@ jobs:
           auth-token: ${{ secrets.PREFIX_DEV_TOKEN }}
 
       - name: Run Tests
-        run: pixi run -e test
+        run: pixi run -e ${{ matrix.environment }} test
       - name: List files  # Add this step
         run: ls -la
-      - name: Publish Code Coverage
+      - name: Upload coverage reports to Codecov
         uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
+          slug: donlapark/coverforest
