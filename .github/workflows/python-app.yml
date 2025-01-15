@@ -36,16 +36,8 @@ jobs:
           auth-token: ${{ secrets.PREFIX_DEV_TOKEN }}
 
       - name: Run tests
-        run: pixi run -e test
+        run: pixi run -e test $COV
 
-      - name: Install dependencies
-        run: pip install pytest pytest-cov
-
-      - name: Run tests
-        run: pytest --cov-branch --cov-report=xml
-
-      - name: Upload results to Codecov
-        uses: codecov/codecov-action@v5
+      - uses: codecov/codecov-action@v4
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          slug: donlapark/coverforest
