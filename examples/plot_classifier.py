@@ -8,9 +8,14 @@ An example plot of :class:`coverforest.CoverForestClassifier`
 
 # %%
 # Train our classifier on very simple dataset
+import os
+import sys
+
+sys.path.insert(0, os.path.abspath("../.."))
+
 from sklearn.datasets import make_classification
 
-from .coverforest import CoverForestClassifier
+from coverforest import CoverForestClassifier
 
 X, y = make_classification(
     n_samples=200,
