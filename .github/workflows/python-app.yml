@@ -14,26 +14,19 @@ jobs:
       matrix:
         include:
           - os: ubuntu-latest
-            python-version: "3.7"
-            numpy-version: 1.21.1
-          - os: ubuntu-latest
-            python-version: "3.8"
-            numpy-version: 1.21.1
+            python-version: "3.9"
           - os: ubuntu-latest
             python-version: "3.9"
-            numpy-version: 1.21.1
           - os: ubuntu-latest
             python-version: "3.10"
-            numpy-version: 1.22.4
+          - os: ubuntu-latest
+            python-version: "3.10"
           - os: ubuntu-latest
             python-version: "3.11"
-            numpy-version: 1.25.2
           - os: windows-latest
             python-version: "3.11"
-            numpy-version: 1.25.2
           - os: macos-latest
-            python-version: "3.10"
-            numpy-version: 1.25.2
+            python-version: "3.12"
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
@@ -43,9 +36,6 @@ jobs:
           cache: true
           auth-host: prefix.dev
           auth-token: ${{ secrets.PREFIX_DEV_TOKEN }}
-
-      - name: Install numpy
-        run: pip install numpy==${{ matrix.numpy-version }}
 
       - name: Run tests
         run: pixi run -e ${{ matrix.environment }} test
