@@ -12,20 +12,25 @@ jobs:
   build:
     strategy:
       matrix:
-        environment: [test]
         include:
           - os: ubuntu-latest
             python-version: "3.9"
+            environment: [test]
           - os: ubuntu-latest
             python-version: "3.10"
+            environment: [test]
           - os: ubuntu-latest
             python-version: "3.11"
+            environment: [test]
           - os: ubuntu-latest
             python-version: "3.12"
+            environment: [test]
           - os: windows-latest
             python-version: "3.11"
+            environment: [test]
           - os: macos-latest
             python-version: "3.10"
+            environment: [test]
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
@@ -37,8 +42,6 @@ jobs:
 
       - name: Run Tests
         run: pixi run -e ${{ matrix.environment }} test
-      - name: List files  # Add this step
-        run: ls -la
       - name: Upload coverage reports to Codecov
         uses: codecov/codecov-action@v5
         with:
