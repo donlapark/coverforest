@@ -13,7 +13,7 @@ from importlib.metadata import version as get_version
 project = "Scikit-learn Project Template"
 copyright = "2016, V. Birodkar"
 author = "V. Birodkar"
-release = get_version('coverforest')
+release = get_version("coverforest")
 version = ".".join(release.split(".")[:3])
 
 # -- General configuration ---------------------------------------------------
@@ -58,7 +58,7 @@ html_sidebars = {
 
 html_theme_options = {
     "external_links": [],
-    "github_url": "https://github.com/scikit-learn-contrib/coverforest",
+    "github_url": "https://github.com/donlapark/coverforest",
     # "twitter_url": "https://twitter.com/pandas_dev",
     "use_edit_page_button": True,
     "show_toc_level": 1,
@@ -66,9 +66,9 @@ html_theme_options = {
 }
 
 html_context = {
-    "github_user": "scikit-learn-contrib",
+    "github_user": "donlapark",
     "github_repo": "coverforest",
-    "github_version": "master",
+    "github_version": "main",
     "doc_path": "doc",
 }
 
