@@ -20,7 +20,9 @@ jobs:
       with:
         pixi-version: v0.40.1
         environments: doc
-        frozen: true
+        cache: true
+        auth-host: prefix.dev
+        auth-token: ${{ secrets.PREFIX_DEV_TOKEN }}
 
     - name: Build documentation
       run: pixi run -e doc build-doc

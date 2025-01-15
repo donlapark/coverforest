@@ -17,7 +17,9 @@ jobs:
         with:
           pixi-version: v0.40.1
           environments: lint
-          frozen: true
+          cache: true
+          auth-host: prefix.dev
+          auth-token: ${{ secrets.PREFIX_DEV_TOKEN }}
 
       - name: Run linter
         run: pixi run -e lint lint
