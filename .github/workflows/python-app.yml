@@ -16,30 +16,27 @@ jobs:
           - os: ubuntu-latest
             python-version: "3.9"
           - os: ubuntu-latest
-            python-version: "3.9"
-          - os: ubuntu-latest
-            python-version: "3.10"
-          - os: ubuntu-latest
             python-version: "3.10"
           - os: ubuntu-latest
             python-version: "3.11"
+          - os: ubuntu-latest
+            python-version: "3.12"
           - os: windows-latest
             python-version: "3.11"
           - os: macos-latest
-            python-version: "3.12"
+            python-version: "3.10"
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
       - uses: prefix-dev/setup-pixi@v0.8.0
         with:
           pixi-version: v0.40.1
-          python-version: ${{ matrix.python-version }}
           cache: true
           auth-host: prefix.dev
           auth-token: ${{ secrets.PREFIX_DEV_TOKEN }}
 
       - name: Run tests
-        run: pixi run -e ${{ matrix.environment }} test
+        run: pixi run -e test
 
       - name: Upload coverage reports to Codecov
         uses: codecov/codecov-action@v4.6.0

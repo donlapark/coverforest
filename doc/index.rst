@@ -12,8 +12,8 @@ Project template for `scikit-learn` extension
 **Date**: |today| **Version**: |version|
 
 **Useful links**:
-`Source Repository <https://github.com/scikit-learn-contrib/coverforest>`__ |
-`Issues & Ideas <https://github.com/scikit-learn-contrib/coverforestk/issues>`__ |
+`Source Repository <https://github.com/donlapark/coverforest>`__ |
+`Issues & Ideas <https://github.com/donlapark/coverforest/issues>`__ |
 
 This is the documentation for the `coverforest` to help at extending
 `scikit-learn`. It provides some information on how to build your own custom
