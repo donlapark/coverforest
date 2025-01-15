@@ -306,7 +306,7 @@ class ConformalClassifierMixin:
             The scoring metric to use:
             - 'size': returns the average size of prediction sets
             - 'coverage': returns the empirical coverage (proportion of sets that
-              contain true labels)
+            contain true labels)
             - 'both': returns a tuple of (coverage, average_size)
 
         sample_weight : array-like of shape (n_samples,), default=None
@@ -430,7 +430,7 @@ class ConformalRegressorMixin:
             The scoring metric to use:
             - 'length': returns the average length of prediction intervals
             - 'coverage': returns the empirical coverage (proportion of true values in
-              intervals)
+            intervals)
             - 'both': returns a tuple of (coverage, average_length)
 
         sample_weight : array-like of shape (n_samples,), default=None
@@ -1212,9 +1212,9 @@ class ConformalForestClassifier(
         `k_init='auto'` and/or `lambda_init='auto'`, these parameters are chosen
         automatically:
         - k is set to the (1-alpha)-quantile of the rank of true labels in the
-          out-of-bag predictions
+        out-of-bag predictions
         - lambda is selected from `[0.001, 0.01, 0.1, 0.2, 0.5, 1]` using a
-          held-out validation set to minimize prediction set size
+        held-out validation set to minimize prediction set size
 
         Parameters
         ----------
@@ -1909,11 +1909,11 @@ class CoverForestClassifier(ConformalForestClassifier):
 
     The class supports three subsampling methods for out-of-sample calibration:
     - 'cv': Uses K-fold cross-validation to split the training set. This method
-      is referred to as CV+.
+    is referred to as CV+.
     - 'bootstrap': Uses bootstrap subsampling on the training set. This method
-      is referred to as Jackknife+-after-Bootstrap.
+    is referred to as Jackknife+-after-Bootstrap.
     - 'split': Uses train-test split on the training set. This method
-      is referred to as split conformal.
+    is referred to as split conformal.
 
     Note that another well-known method, Jackknife+, is a special case of CV+
     with one sample in each fold.
@@ -2375,11 +2375,11 @@ class CoverForestRegressor(ConformalForestRegressor):
 
     The class supports three subsampling methods for out-of-sample calibration:
     - 'cv': Uses K-fold cross-validation to split the training set. This method
-      is referred to as CV+.
+    is referred to as CV+.
     - 'bootstrap': Uses bootstrap subsampling on the training set. This method
-      is referred to as Jackknife+-after-Bootstrap.
+    is referred to as Jackknife+-after-Bootstrap.
     - 'split': Uses train-test split on the training set. This method
-      is referred to as split conformal.
+    is referred to as split conformal.
 
     Note that another well-known method, Jackknife+, is a special case of CV+
     with one sample in each fold.
