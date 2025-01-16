@@ -31,7 +31,6 @@ X, y = make_classification(n_samples=1000, n_features=20,
                          random_state=42)
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2)
 
-# Initialize and fit the classifier
 clf = CoverForestClassifier(
     method='cv',           # Use CV+ method
     cv=5,                  # 5-fold cross-validation
@@ -39,10 +38,9 @@ clf = CoverForestClassifier(
     n_subestimators=50     # Trees per forest in CV+
 )
 
-# Fit the model with desired miscoverage rate
+
 clf.fit(X_train, y_train)
 
-# Make predictions with sets
 y_pred, y_sets = clf.predict(X_test, alpha=0.1)  # 90% coverage sets
 ```
 
@@ -52,22 +50,17 @@ y_pred, y_sets = clf.predict(X_test, alpha=0.1)  # 90% coverage sets
 from coverforest import CoverForestRegressor
 from sklearn.datasets import make_regression
 
-# Generate sample data
+
 X, y = make_regression(n_samples=1000, n_features=20,
-                      n_informative=15, noise=0.1,
-                      random_state=42)
+                      n_informative=15, noise=0.1)
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2)
 
-# Initialize and fit the regressor
 reg = CoverForestRegressor(
     n_estimators=100,
     method='bootstrap'    # Use Jackknife+-after-Bootstrap
 )
-
-# Fit the model
 reg.fit(X_train, y_train)
 
-# Make predictions with intervals
 y_pred, y_intervals = reg.predict(X_test, alpha=0.1)  # 90% coverage intervals
 ```
 
