@@ -72,13 +72,13 @@ pip install .
 
 <a id="1">[1]</a> Yaniv Romano, Matteo Sesia & Emmanuel J. Candès, "Classification with Valid and Adaptive Coverage", NeurIPS 2020.
 
-<a id="1">[2]</a> Rina Foygel Barber, Emmanuel J. Candès, Aaditya Ramdas & Ryan J. Tibshirani, "Predictive inference with the jackknife+", Ann. Statist. 49 (1) 486-507, 2021.
+<a id="2">[2]</a> Rina Foygel Barber, Emmanuel J. Candès, Aaditya Ramdas & Ryan J. Tibshirani, "Predictive inference with the jackknife+", Ann. Statist. 49 (1) 486-507, 2021.
 
-<a id="1">[3]</a> Byol Kim, Chen Xu, Rina Foygel Barber, "Predictive inference is free with the jackknife+-after-bootstrap", NeurIPS 2020.
+<a id="3">[3]</a> Byol Kim, Chen Xu, Rina Foygel Barber, "Predictive inference is free with the jackknife+-after-bootstrap", NeurIPS 2020.
 
-<a id="1">[4]</a> Vladimir Vovk, Ilia Nouretdinov, Valery Manokhin & Alexander Gammerman, "Cross-conformal predictive distributions", 37-51, COPA 2018.
+<a id="4">[4]</a> Vladimir Vovk, Ilia Nouretdinov, Valery Manokhin & Alexander Gammerman, "Cross-conformal predictive distributions", 37-51, COPA 2018.
 
-<a id="1">[5]</a> Anastasios Nikolas Angelopoulos, Stephen Bates, Michael I. Jordan & Jitendra Malik, "Uncertainty Sets for Image Classifiers using Conformal Prediction", ICLR 2021.
+<a id="5">[5]</a> Anastasios Nikolas Angelopoulos, Stephen Bates, Michael I. Jordan & Jitendra Malik, "Uncertainty Sets for Image Classifiers using Conformal Prediction", ICLR 2021.
 
 [6] Leo Breiman, "Random Forests", Machine Learning, 45(1), 5-32, 2001.
 
