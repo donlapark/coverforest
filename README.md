@@ -2,65 +2,30 @@
   <img width="160" src="https://github.com/donlapark/coverforest/raw/main/doc/images/coverforest_96.png">
 </p>
 
-coverforest - <font size="5">Random Forest with Conformal Predictions</font>
-======================================================
+## coverforest - Random Forest with Conformal Predictions
 
 A fast and efficient implementation of conformal random forests for both classification and regression tasks. coverforest extends scikit-learn's random forest implementation to provide prediction sets/intervals with guaranteed coverage properties using conformal prediction methods.
 
-coverforest implements three conformal prediction methods for random forests:
+coverforest provides three conformal prediction methods for random forests:
 - CV+ (Cross-Validation+)
 - Jackknife+-after-Bootstrap
 - Split Conformal
 
-The library provides two main classes:
-- `CoverForestClassifier`: For classification tasks, producing prediction sets that contain the true label with probability 1-α
-- `CoverForestRegressor`: For regression tasks, producing prediction intervals that contain the true value with probability 1-α
-
-## Quick examples
-
-### Set prediction
+The library provides two main classes: `CoverForestClassifier` and `CoverForestRegressor`, which follows the standard scikit-learn convention.
 ```python
 from coverforest import CoverForestClassifier
-from sklearn.datasets import make_classification
-from sklearn.model_selection import train_test_split
 
-# Generate sample data
-X, y = make_classification(n_samples=1000, n_features=20,
-                         n_informative=15, n_redundant=5,
-                         random_state=42)
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2)
-
-clf = CoverForestClassifier(
-    method='cv',           # Use CV+ method
-    cv=5,                  # 5-fold cross-validation
-    n_estimators=100,      # 100 forests
-    n_subestimators=50     # Trees per forest in CV+
-)
-
-
+clf = CoverForestClassifier(n_estimators=100, method='cv')
 clf.fit(X_train, y_train)
-
-y_pred, y_sets = clf.predict(X_test, alpha=0.1)  # 90% coverage sets
+y_pred, y_sets = clf.predict(X_test, alpha=0.05)  # 95% coverage sets
 ```
-
-### Interval prediction
 
 ```python
 from coverforest import CoverForestRegressor
-from sklearn.datasets import make_regression
 
-
-X, y = make_regression(n_samples=1000, n_features=20,
-                      n_informative=15, noise=0.1)
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2)
-
-reg = CoverForestRegressor(
-    n_estimators=100,
-    method='bootstrap'    # Use Jackknife+-after-Bootstrap
-)
+reg = CoverForestRegressor(n_estimators=100, method='bootstrap')
 reg.fit(X_train, y_train)
-
-y_pred, y_intervals = reg.predict(X_test, alpha=0.1)  # 90% coverage intervals
+y_pred, y_intervals = reg.predict(X_test, alpha=0.05)  # 95% coverage intervals
 ```
 
 ## Requirements
@@ -68,7 +33,7 @@ y_pred, y_intervals = reg.predict(X_test, alpha=0.1)  # 90% coverage intervals
 - Python >=3.9
 - Scikit-learn >=1.6.0
 
-## Installation
+## 🛠 Installation
 
 You can install coverforest using pip:
 
