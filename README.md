@@ -2,12 +2,10 @@
   <img width="160" src="https://github.com/donlapark/coverforest/raw/main/doc/images/coverforest_96.png">
 </p>
 
-coverforest - Random Forest with Conformal Predictions
+coverforest - ## Random Forest with Conformal Predictions
 ======================================================
 
 A fast and efficient implementation of conformal random forests for both classification and regression tasks. coverforest extends scikit-learn's random forest implementation to provide prediction sets/intervals with guaranteed coverage properties using conformal prediction methods.
-
-## Introduction
 
 coverforest implements three conformal prediction methods for random forests:
 - CV+ (Cross-Validation+)
@@ -18,8 +16,9 @@ The library provides two main classes:
 - `CoverForestClassifier`: For classification tasks, producing prediction sets that contain the true label with probability 1-α
 - `CoverForestRegressor`: For regression tasks, producing prediction intervals that contain the true value with probability 1-α
 
-## Classification Example
+## Quick examples
 
+### Set prediction
 ```python
 from coverforest import CoverForestClassifier
 from sklearn.datasets import make_classification
@@ -44,7 +43,7 @@ clf.fit(X_train, y_train)
 y_pred, y_sets = clf.predict(X_test, alpha=0.1)  # 90% coverage sets
 ```
 
-## Regression Example
+### Interval prediction
 
 ```python
 from coverforest import CoverForestRegressor
