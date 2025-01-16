@@ -27,7 +27,7 @@ from coverforest import CoverForestClassifier
 
 clf = CoverForestClassifier(n_estimators=100, method='cv')
 clf.fit(iris.data, iris.target)
-y_pred, y_sets = clf.predict([[3, 1, 2, 1], [5, 1, 5, 1]], alpha=0.05)
+y_pred, y_sets = clf.predict([[3., 1., 2., 1.], [5., 1., 5., 1.]], alpha=0.05)
 # y_pred = array([0, 1]), y_sets = [array([0, 1]), array([1, 2])])
 ```
 
