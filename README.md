@@ -2,16 +2,16 @@
   <img width="160" src="https://github.com/donlapark/coverforest/raw/main/doc/images/coverforest_96.png">
 </p>
 
-## coverforest - Random Forest with Conformal Predictions
+## 🌳 coverforest - Random Forest with Conformal Predictions
 
 A fast and efficient implementation of conformal random forests for both classification and regression tasks. coverforest extends scikit-learn's random forest implementation to provide prediction sets/intervals with guaranteed coverage properties using conformal prediction methods.
 
 coverforest provides three conformal prediction methods for random forests:
-- CV+ (Cross-Validation+)
-- Jackknife+-after-Bootstrap
-- Split Conformal
+- CV+ (Cross-Validation+)[^1]
+- Jackknife+-after-Bootstrap[^2]
+- Split Conformal[^3]
 
-The library provides two main classes: `CoverForestClassifier` and `CoverForestRegressor`, which follows the standard scikit-learn convention.
+The library provides two main classes: `CoverForestClassifier` and `CoverForestRegressor`, which follow the standard scikit-learn convention.
 ```python
 from coverforest import CoverForestClassifier
 
@@ -28,12 +28,12 @@ reg.fit(X_train, y_train)
 y_pred, y_intervals = reg.predict(X_test, alpha=0.05)  # 95% coverage intervals
 ```
 
-## Requirements
+## 🔧 Requirements
 
 - Python >=3.9
 - Scikit-learn >=1.6.0
 
-## 🛠 Installation
+## ⚡ Installation
 
 You can install coverforest using pip:
 
@@ -49,7 +49,7 @@ cd coverforest
 pip install .
 ```
 
-## Features
+## ✨ Features
 
 - Fast implementation leveraging efficient random forest algorithms
 - Support for three conformal prediction methods: CV+, Jackknife+-after-Bootstrap, and Split Conformal
@@ -59,13 +59,13 @@ pip install .
 - Comprehensive uncertainty quantification through prediction sets/intervals
 - Support for sample weights and custom cross-validation schemes
 
-## References
+## 📖 References
 
 1. Angelopoulos, A. N., & Bates, S. (2021). "A Gentle Introduction to Conformal Prediction and Distribution-Free Uncertainty Quantification"
 2. Kim, B., Xu, C., & Barber, R. F. (2020). "Predictive inference with the jackknife+"
 3. Vovk, V., Gammerman, A., & Shafer, G. (2005). "Algorithmic Learning in a Random World"
 
-## License
+## 📜 License
 
 MIT License
 
