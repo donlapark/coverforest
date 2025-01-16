@@ -4,32 +4,33 @@
 
 ## 🌳 coverforest - Random Forest with Conformal Predictions
 
-A fast and simple implementation of conformal random forests for both classification and regression tasks. **coverforest** extends scikit-learn's random forest implementation to provide prediction sets/intervals with guaranteed coverage using conformal prediction methods.
+A fast and simple implementation of conformal random forests for both classification and regression tasks. **coverforest** extends [scikit-learn](https://scikit-learn.org)'s random forest implementation to provide prediction sets/intervals with guaranteed coverage using conformal prediction methods.
 
 **coverforest** provides three conformal prediction methods for random forests:
 - CV+ (Cross-Validation+) [[1](#1), [2](#2)]
 - Jackknife+-after-Bootstrap [[3]](#3)
 - Split Conformal [[4]](#4)
 
-The library provides two main classes: `CoverForestRegressor` and `CoverForestClassifier`.
+The library provides two main classes: `CoverForestRegressor` for interval prediction and `CoverForestClassifier`. for set prediction.
 Here are quick runs of the two classes:
 
 ```python
 from coverforest import CoverForestRegressor
 
-reg = CoverForestRegressor(n_estimators=100, method='bootstrap')
+reg = CoverForestRegressor(n_estimators=100, method='bootstrap')  # use Jackknife+-after-Bootstrap
 reg.fit(X_train, y_train)
-y_pred, y_intervals = reg.predict(X_test, alpha=0.05)  # 95% coverage intervals
+y_pred, y_intervals = reg.predict(X_test, alpha=0.05)             # 95% coverage intervals
 ```
 
 ```python
 from coverforest import CoverForestClassifier
 
-clf = CoverForestClassifier(n_estimators=100, method='cv')
-clf.fit(iris.data, iris.target)
-y_pred, y_sets = clf.predict([[3., 1., 2., 1.], [5., 1., 5., 1.]], alpha=0.05)
-# y_pred = array([0, 1]), y_sets = [array([0, 1]), array([1, 2])])
+clf = CoverForestClassifier(n_estimators=100, method='cv')  # use CV+
+clf.fit(X_train, y_train)
+y_pred, y_sets = clf.predict(X_test, alpha=0.05)            # 95% coverage sets
 ```
+
+### Regularization in conformal set predictions
 
 The classifier includes two regularization parameters $k$ and $\lambda$ that encourage smaller prediction sets [[5]](#5).
 
@@ -37,16 +38,15 @@ The classifier includes two regularization parameters $k$ and $\lambda$ that enc
 clf = CoverForestClassifier(n_estimators=100, method='cv', k_init=2, lambda_init=0.1)
 ```
 
-Automatic search for suitable $k$ and $\lambda$ is also possible by specifying `k_init="auto"` and `lambda_init="auto"`—These are the default values when instantiating `CoverForestClassifier` models.
+Automatic searching for suitable $k$ and $\lambda$ is also possible by specifying `k_init="auto"` and `lambda_init="auto"`, which are the default values when instantiating a `CoverForestClassifier` model.
+
+### Performance Tips
+
+Random forest leverages parallel computation by processing trees concurrently. Use the `n_jobs` parameter in `fit()` and `predict()` to control CPU usage (`n_jobs=-1` uses all cores).
+
+For prediction, conformity score calculations require a memory array of size `(n_train × n_test × n_classes)`. To optimize performance with high `n_jobs` values, split large test sets into smaller batches.
 
 See the documentation for more details and examples.
-
-## ✨ Features
-
-- Parallel processing support for both training and prediction
-- Efficient conformity score calculations via Cython
-- Automatic parameter tuning during the `fit()` call
-- Seamless integration with scikit-learn's API
 
 ## 🔧 Requirements
 
@@ -68,6 +68,13 @@ git clone https://github.com/donlapark/coverforest.git
 cd coverforest
 pip install .
 ```
+
+## 🔗 See Also
+
+- [conformal](https://github.com/aangelopoulos/conformal): A Python package for conformal prediction focusing on deep neural networks
+- [mapie](https://github.com/scikit-learn-contrib/MAPIE): Multiple methods for uncertainty quantification, including conformal prediction
+- [nonconformist](https://github.com/donlnz/nonconformist): One of the first Python implementations of conformal prediction
+
 
 ## 📖 References
 
@@ -92,10 +99,10 @@ pip install .
 If you use **coverforest** in your research, please cite:
 
 ```bibtex
-@software{coverforest2024,
+@software{coverforest2025,
   author = {Donlapark Ponnoprat},
   title = {coverforest: Fast Conformal Random Forests},
-  year = {2024},
+  year = {2025},
   publisher = {GitHub},
   url = {https://github.com/donlapark/coverforest}
 }

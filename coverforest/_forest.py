@@ -1255,19 +1255,15 @@ class ConformalForestClassifier(
                Classifiers using Conformal Prediction", ICLR 2021.
         """
 
-        self._set_lambda_star_and_k_star(
-            X, y, alpha, calib_size, valid_size, sample_weight
-        )
+        self.search_k_and_lambda(X, y, alpha, calib_size, valid_size, sample_weight)
         print(f"Fitting with k = {self.k_star_} and lambda = {self.lambda_star_}.")
         self._fit_wrapper(X, y, calib_size, sample_weight)
 
         return self
 
-    def _set_lambda_star_and_k_star(
-        self, X, y, alpha, calib_size, valid_size, sample_weight
-    ):
-        """Set optimal values for lambda and k parameters and store them as
-        attributes `lambda_star_` and `k_star_`, respectively.
+    def search_k_and_lambda(self, X, y, alpha, calib_size, valid_size, sample_weight):
+        """Search for optimal values of k and lambda parameters and store them as
+        attributes `k_star_` and `lambda_star_`, respectively.
 
         The parameter search follows the procedure suggested by Angelopoulos,
         Bates, Jordan & Jitendra Malik (2021):

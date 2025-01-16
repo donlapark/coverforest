@@ -27,7 +27,14 @@ def report_failed_check_bootstrap(estimator):
 # parametrize_with_checks allows to get a generator of check that is more fine-grained
 # than check_estimator
 @parametrize_with_checks(
-    [CoverForestClassifier(), CoverForestRegressor()],
+    [
+        CoverForestClassifier(method="cv", n_subestimators=10),
+        CoverForestClassifier(method="boostrap"),
+        CoverForestClassifier(method="split"),
+        CoverForestRegressor(method="cv", n_subestimators=10),
+        CoverForestRegressor(method="bootstrap"),
+        CoverForestRegressor(method="split"),
+    ],
     expected_failed_checks=report_failed_check_bootstrap,
 )
 def test_estimators(estimator, check, request):
