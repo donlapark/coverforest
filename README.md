@@ -4,7 +4,7 @@
 
 ## 🌳 coverforest - Random Forest with Conformal Predictions
 
-A fast and simple implementation of conformal random forests for both classification and regression tasks. **coverforest** extends [scikit-learn](https://scikit-learn.org)'s random forest implementation to provide prediction sets/intervals with guaranteed coverage using conformal prediction methods.
+A simple and efficient implementation of conformal random forests for both classification and regression tasks. **coverforest** extends [scikit-learn](https://scikit-learn.org)'s random forest implementation to provide prediction sets/intervals with guaranteed coverage using conformal prediction methods.
 
 **coverforest** provides three conformal prediction methods for random forests:
 - CV+ (Cross-Validation+) [[1](#1), [2](#2)]
@@ -71,8 +71,12 @@ pip install .
 
 ## 🔗 See Also
 
-- [conformal](https://github.com/aangelopoulos/conformal): A Python package for conformal prediction focusing on deep neural networks
-- [mapie](https://github.com/scikit-learn-contrib/MAPIE): Multiple methods for uncertainty quantification, including conformal prediction
+- [MAPIE](https://github.com/scikit-learn-contrib/MAPIE): A Python package that provides scikit-learn-compatible wrappers for conformal classification and regression
+- [conforest](https://github.com/knrumsey/conforest) An R implementation of random forest with inductive conformal prediction.
+- [clover](https://github.com/Monoxido45/clover) A Python implementation of a regression forest method for conditional coverage (e.g. $P(Y \vert X =x)$) guarantee.
+- [Conformal Prediction](https://github.com/aangelopoulos/conformal-prediction): Jupyter Notebook demonstrations of conformal prediction on various tasks, such as image classification, image segmentation, times series forecasting, and outlier detection
+- [TorchCP](https://github.com/ml-stat-Sustech/TorchCP) A Python toolbox for Conformal Prediction in Deep Learning built on top of PyTorch
+- [crepes](https://github.com/henrikbostrom/crepes) A Python package that implements standard and Mondrian conformal classifiers as well as standard, normalized and Mondrian conformal regressors and predictive systems.
 - [nonconformist](https://github.com/donlnz/nonconformist): One of the first Python implementations of conformal prediction
 
 
