@@ -1,181 +1,189 @@
-.. _quick_start:
+Quick Start Guide
+=================
 
-###############
-Getting started
-###############
+This guide will help you get started with **coverforest**, a Python package for conformal random forests.
 
-This package serves as a skeleton package aiding at developing compatible
-scikit-learn contribution.
+Installation
+------------
 
-Creating your own scikit-learn contribution package
-===================================================
+Install coverforest using pip:
 
-Download and setup your repository
-----------------------------------
+.. code-block:: bash
 
-To create your package, you need to clone the ``coverforest`` repository:
+    pip install coverforest
 
-.. prompt:: bash $
+Basic Usage
+-----------
 
-  git clone https://github.com/scikit-learn-contrib/coverforest.git
+Classification
+^^^^^^^^^^^^^^
 
-Before to reinitialize your git repository, you need to make the following
-changes. Replace all occurrences of ``skltemplate``, ``sklearn-template``, or
-``coverforest`` with the name of you own project. You can find all the
-occurrences using the following command:
+``CoverForestClassifier`` provides prediction sets that contain the true label with high probability:
 
-.. prompt:: bash $
+.. code-block:: python
 
-  git grep skltemplate
-  git grep sklearn-template
-  git grep coverforest
+    from coverforest import CoverForestClassifier
+    from sklearn.datasets import make_classification
+    from sklearn.model_selection import train_test_split
 
-To remove the history of the template package, you need to remove the `.git`
-directory:
+    # Generate sample data
+    X, y = make_classification(n_samples=1000, n_features=20,
+                             n_informative=15, random_state=42)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2)
 
-.. prompt:: bash $
+    # Create and fit classifier
+    clf = CoverForestClassifier(
+        n_estimators=100,    # Number of forests
+        method='cv',         # Use CV+ method
+        cv=5,               # 5-fold cross-validation
+        n_subestimators=50  # Trees per forest
+    )
 
-  rm -rf .git
+    # Fit with auto-tuning of k and lambda parameters
+    clf.fit(X_train, y_train, alpha=0.1)  # 90% coverage target
 
-Then, you need to initialize your new git repository:
+    # Make predictions
+    y_pred, y_sets = clf.predict(X_test, alpha=0.1)
 
-.. prompt:: bash $
+    # y_pred contains point predictions
+    # y_sets contains prediction sets (default: list of arrays)
 
-  git init
-  git add .
-  git commit -m 'Initial commit'
+    # For binary output format
+    y_pred, y_sets = clf.predict(X_test, alpha=0.1, binary_output=True)
+    # y_sets is now a binary array of shape (n_samples, n_classes)
 
-Finally, you create an online repository on GitHub and push your code online:
+Parameters k and λ
+''''''''''''''''''
 
-.. prompt:: bash $
+The classifier uses two regularization parameters:
 
-  git remote add origin https://github.com/your_remote/your_contribution.git
-  git push origin main
+- ``k``: Penalizes prediction sets containing more than k classes
+- ``λ`` (lambda): Controls the strength of the k-penalty
 
-Develop your own scikit-learn estimators
-----------------------------------------
+You can set these manually:
 
-.. _check_estimator: http://scikit-learn.org/stable/modules/generated/sklearn.utils.estimator_checks.check_estimator.html#sklearn.utils.estimator_checks.check_estimator
-.. _`Contributor's Guide`: http://scikit-learn.org/stable/developers/
-.. _PEP8: https://www.python.org/dev/peps/pep-0008/
-.. _PEP257: https://www.python.org/dev/peps/pep-0257/
-.. _NumPyDoc: https://github.com/numpy/numpydoc
-.. _doctests: https://docs.python.org/3/library/doctest.html
+.. code-block:: python
 
-You can modify the source files as you want. However, your custom estimators
-need to pass the check_estimator_ test to be scikit-learn compatible. We provide a
-file called `test_common.py` where we run the checks on our custom estimators.
+    clf = CoverForestClassifier(
+        n_estimators=100,
+        k_init=2,           # Maximum 2 classes per set
+        lambda_init=0.1     # Moderate regularization
+    )
 
-You can refer to the :ref:`User Guide <user_guide>` to help you create a compatible
-scikit-learn estimator.
+Or use automatic tuning (default):
 
-In any case, developers should endeavor to adhere to scikit-learn's
-`Contributor's Guide`_ which promotes the use of:
+.. code-block:: python
 
-* algorithm-specific unit tests, in addition to ``check_estimator``'s common
-  tests;
-* PEP8_-compliant code;
-* a clearly documented API using NumpyDoc_ and PEP257_-compliant docstrings;
-* references to relevant scientific literature in standard citation formats;
-* doctests_ to provide succinct usage examples;
-* standalone examples to illustrate the usage, model visualisation, and
-  benefits/benchmarks of particular algorithms;
-* efficient code when the need for optimization is supported by benchmarks.
+    clf = CoverForestClassifier(
+        n_estimators=100,
+        k_init="auto",      # Auto-select k
+        lambda_init="auto"  # Auto-select lambda
+    )
 
-Managing your local and continuous integration environment
-----------------------------------------------------------
+Regression
+^^^^^^^^^^
 
-Here, we set up for you an repository that uses `pixi`. The `pixi.toml` file defines
-the packages and tasks to be run that we will present below. You can refer to the
-following documentation link to install `pixi`: https://pixi.sh/latest/#installation
+``CoverForestRegressor`` provides prediction intervals that contain the true value with high probability:
 
-Once done, you can refer to the documentation to get started but we provide the
-command below to interact with the main task requested to develop your package.
+.. code-block:: python
 
-Edit the documentation
-----------------------
+    from coverforest import CoverForestRegressor
+    from sklearn.datasets import make_regression
 
-.. _Sphinx: http://www.sphinx-doc.org/en/stable/
+    # Generate sample data
+    X, y = make_regression(n_samples=1000, n_features=20,
+                          n_informative=15, noise=0.1,
+                          random_state=42)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2)
 
-The documentation is created using Sphinx_. In addition, the examples are
-created using ``sphinx-gallery``. Therefore, to generate locally the
-documentation, you can leverage the following `pixi` task:
+    # Create and fit regressor
+    reg = CoverForestRegressor(
+        n_estimators=100,
+        method='bootstrap',  # Use Jackknife+-after-Bootstrap
+        n_subestimators=50
+    )
 
-.. prompt:: bash $
+    # Fit the model
+    reg.fit(X_train, y_train)
 
-  pixi run build-doc
+    # Make predictions with 95% coverage intervals
+    y_pred, y_intervals = reg.predict(X_test, alpha=0.05)
 
-The documentation is made of:
+    # y_pred contains point predictions
+    # y_intervals contains (lower, upper) bounds for each prediction
 
-* a home page, ``doc/index.rst``;
-* an API documentation, ``doc/api.rst`` in which you should add all public
-  objects for which the docstring should be exposed publicly.
-* a User Guide documentation, ``doc/user_guide.rst``, containing the narrative
-  documentation of your package, to give as much intuition as possible to your
-  users.
-* examples which are created in the `examples/` folder. Each example
-  illustrates some usage of the package. the example file name should start by
-  `plot_*.py`.
+Method Selection
+----------------
 
-Local testing
--------------
+coverforest supports three conformal prediction methods:
 
-To run the tests locally, you can use the following command:
+1. ``'cv'``: CV+ method (default)
+    - Uses K-fold cross-validation
+    - Good balance of computational cost and efficiency
 
-.. prompt:: bash $
+2. ``'bootstrap'``: Jackknife+-after-Bootstrap
+    - Uses bootstrap resampling
+    - More computationally efficient for large datasets
 
-  pixi run test
+3. ``'split'``: Split conformal
+    - Simplest method
+    - Uses a single train-calibration split
+    - Less sample efficient
 
-It will use `pytest` under the hood to run the package tests.
+Select a method using the ``method`` parameter:
 
-In addition, you have a linter task to check the code consistency in terms of style:
+.. code-block:: python
 
-.. prompt:: bash $
+    # Using CV+
+    clf_cv = CoverForestClassifier(method='cv', cv=5)
 
-  pixi run lint
+    # Using Jackknife+-after-Bootstrap
+    clf_boot = CoverForestClassifier(method='bootstrap')
 
-Activating the development environment
---------------------------------------
+    # Using split conformal
+    clf_split = CoverForestClassifier(method='split', calib_size=0.3)
 
-In the case that you don't want to use the `pixi run` commands and directly interact
-with the usual python tools, you can activate the development environment:
+Advanced Features
+-----------------
 
-.. prompt:: bash $
+Parallel Processing
+^^^^^^^^^^^^^^^^^^^
 
-  pixi shell -e dev
+Enable parallel processing with the ``n_jobs`` parameter:
 
-This will activate an environment containing the dependencies needed to run the linters,
-tests, and build the documentation. So for instance, you can run the tests with:
+.. code-block:: python
 
-.. prompt:: bash $
+    clf = CoverForestClassifier(n_jobs=-1)  # Use all cores
+    reg = CoverForestRegressor(n_jobs=4)    # Use 4 cores
 
-  pytest -vsl coverforest
+Sample Weights
+^^^^^^^^^^^^^^
 
-In this case, you can even use pre-commit before using git. You will need to initialize
-it with:
+Both classes support sample weights:
 
-.. prompt:: bash $
+.. code-block:: python
 
-  pre-commit install
+    clf.fit(X_train, y_train, sample_weight=weights)
+    reg.fit(X_train, y_train, sample_weight=weights)
 
-Setup the continuous integration
---------------------------------
+Custom Cross-Validation
+^^^^^^^^^^^^^^^^^^^^^^^
 
-The project template already contains configuration files of the continuous
-integration system. It leverage the above pixi commands and run on GitHub Actions.
-In short, it will:
+Use custom cross-validation splitters with ``cv``:
 
-* run the tests on the different platforms (Linux, MacOS, Windows) and upload the
-  coverage report to codecov.io;
-* check the code style (linter);
-* build the documentation and deploy it automatically on GitHub Pages.
+.. code-block:: python
 
-Publish your package
-====================
+    from sklearn.model_selection import GroupKFold
 
-.. _PyPi: https://packaging.python.org/tutorials/packaging-projects/
-.. _conda-forge: https://conda-forge.org/
+    group_cv = GroupKFold(n_splits=5)
+    clf = CoverForestClassifier(
+        method='cv',
+        cv=group_cv
+    )
 
-You can make your package available through PyPi_ and conda-forge_. Refer to
-the associated documentation to be able to upload your packages such that
-it will be installable with ``pip`` and ``conda``.
+Next Steps
+----------
+
+- Check out the :doc:`API Reference <api>` for detailed documentation
+- See :doc:`Examples <examples>` for more use cases
+- Visit our `GitHub repository <https://github.com/mysite/coverforest>`_ for source code

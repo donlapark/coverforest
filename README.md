@@ -26,8 +26,9 @@ y_pred, y_intervals = reg.predict(X_test, alpha=0.05)  # 95% coverage intervals
 from coverforest import CoverForestClassifier
 
 clf = CoverForestClassifier(n_estimators=100, method='cv')
-clf.fit(X_train, y_train)
-y_pred, y_sets = clf.predict(X_test, alpha=0.05)  # 95% coverage sets
+clf.fit(iris.data, iris.target)
+y_pred, y_sets = clf.predict([[3, 1, 2, 1], [5, 1, 5, 1]], alpha=0.05)
+# y_pred = array([0, 1]), y_sets = [array([0, 1]), array([1, 2])])
 ```
 
 The classifier includes two regularization parameters $k$ and $\lambda$ that encourage smaller prediction sets [[5]](#5).
@@ -92,7 +93,7 @@ If you use **coverforest** in your research, please cite:
 
 ```bibtex
 @software{coverforest2024,
-  author = {Your Name},
+  author = {Donlapark Ponnoprat},
   title = {coverforest: Fast Conformal Random Forests},
   year = {2024},
   publisher = {GitHub},
