@@ -7,11 +7,12 @@
 A fast and efficient implementation of conformal random forests for both classification and regression tasks. coverforest extends scikit-learn's random forest implementation to provide prediction sets/intervals with guaranteed coverage properties using conformal prediction methods.
 
 coverforest provides three conformal prediction methods for random forests:
-- CV+ (Cross-Validation+)[^1]
-- Jackknife+-after-Bootstrap[^2]
-- Split Conformal[^3]
+- CV+ (Cross-Validation+)[[1]](#1)
+- Jackknife+-after-Bootstrap[[2]](#2)
+- Split Conformal[[3]](#3)
 
-The library provides two main classes: `CoverForestClassifier` and `CoverForestRegressor`, which follow the standard scikit-learn convention.
+The library provides two main classes: `CoverForestClassifier` and `CoverForestRegressor`.
+Here are quick runs of the two classes:
 ```python
 from coverforest import CoverForestClassifier
 
@@ -61,15 +62,15 @@ pip install .
 
 ## 📖 References
 
-1. Angelopoulos, A. N., & Bates, S. (2021). "A Gentle Introduction to Conformal Prediction and Distribution-Free Uncertainty Quantification"
-2. Kim, B., Xu, C., & Barber, R. F. (2020). "Predictive inference with the jackknife+"
-3. Vovk, V., Gammerman, A., & Shafer, G. (2005). "Algorithmic Learning in a Random World"
+<a id="1">[1]</a> Angelopoulos, A. N., & Bates, S. (2021). "A Gentle Introduction to Conformal Prediction and Distribution-Free Uncertainty Quantification"
+<a id="1">[2]</a> Kim, B., Xu, C., & Barber, R. F. (2020). "Predictive inference with the jackknife+"
+<a id="1">[3]</a> Vovk, V., Gammerman, A., & Shafer, G. (2005). "Algorithmic Learning in a Random World"
 
 ## 📜 License
 
 MIT License
 
-## Citation
+## 📝 Citation
 
 If you use coverforest in your research, please cite:
 
