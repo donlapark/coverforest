@@ -1,3 +1,7 @@
+<p align="center">
+  <img width="400" src="https://github.com/donlapark/coverforest/raw/main/doc/images/coverforest_72.png">
+</p>
+
 coverforest - Random Forest with Conformal Predictions
 ============================================================
 
