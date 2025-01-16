@@ -4,9 +4,16 @@
 
 ## 🌳 coverforest - Random Forest with Conformal Predictions
 
-A fast and simple implementation of conformal random forests for both classification and regression tasks. **coverforest** extends scikit-learn's random forest implementations to provide prediction sets/intervals with guaranteed coverage using conformal prediction methods.
+A fast and simple implementation of conformal random forests for both classification and regression tasks. **coverforest** extends scikit-learn's random forest implementation to provide prediction sets/intervals with guaranteed coverage using conformal prediction methods.
 
-coverforest provides three conformal prediction methods for random forests:
+## ✨ Features
+
+- Parallel processing support for both training and prediction
+- Efficient conformity score calculations via Cython
+- Automatic parameter tuning during the `fit()` call
+- Seamless integration with scikit-learn's API
+
+**coverforest** provides three conformal prediction methods for random forests:
 - CV+ (Cross-Validation+) [[1](#1), [2](#2)]
 - Jackknife+-after-Bootstrap [[3]](#3)
 - Split Conformal [[4]](#4)
@@ -30,22 +37,15 @@ clf.fit(X_train, y_train)
 y_pred, y_sets = clf.predict(X_test, alpha=0.05)  # 95% coverage sets
 ```
 
-The classifier includes additional regularization parameters $k$ and $\lambda$ to encourage smaller prediction sets [[5]](#5).
+The classifier includes two regularization parameters $k$ and $\lambda$ that encourage smaller prediction sets [[5]](#5).
 
 ```python
 clf = CoverForestClassifier(n_estimators=100, method='cv', k_init=2, lambda_init=0.1)
 ```
 
-Automatic search for suitable $k$ and $\lambda$ is also possible by specifying `k_init="auto"` and `lambda_init="auto"`---These are the default values when instantiating `CoverForestClassifier` models.
+Automatic search for suitable $k$ and $\lambda$ is also possible by specifying `k_init="auto"` and `lambda_init="auto"`—These are the default values when instantiating `CoverForestClassifier` models.
 
 See the documentation for more details and examples.
-
-## ✨ Features
-
-- Parallel processing support for both training and prediction
-- Efficient conformity score calculations via Cython
-- For classification, automatic parameter tuning during `fit`
-- Seamless integration with scikit-learn's API
 
 ## 🔧 Requirements
 
@@ -54,7 +54,7 @@ See the documentation for more details and examples.
 
 ## ⚡ Installation
 
-You can install coverforest using pip:
+You can install **coverforest** using pip:
 
 ```bash
 pip install coverforest
@@ -88,7 +88,7 @@ pip install .
 
 ## 📝 Citation
 
-If you use coverforest in your research, please cite:
+If you use **coverforest** in your research, please cite:
 
 ```bibtex
 @software{coverforest2024,
