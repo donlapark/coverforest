@@ -1359,6 +1359,9 @@ class ConformalForestClassifier(
 
                 self.lambda_star_ = lambda_star
 
+        k_star = self.k_star_
+        lambda_star = self.lambda_star_
+
         return k_star, lambda_star
 
     def _compute_train_giqs(self, oob_pred, y):

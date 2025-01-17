@@ -28,10 +28,10 @@ def report_failed_check_bootstrap(estimator):
 # than check_estimator
 @parametrize_with_checks(
     [
-        CoverForestClassifier(method="cv", n_subestimators=10),
-        CoverForestClassifier(method="boostrap"),
+        CoverForestClassifier(method="cv"),
+        CoverForestClassifier(method="bootstrap"),
         CoverForestClassifier(method="split"),
-        CoverForestRegressor(method="cv", n_subestimators=10),
+        CoverForestRegressor(method="cv"),
         CoverForestRegressor(method="bootstrap"),
         CoverForestRegressor(method="split"),
     ],
