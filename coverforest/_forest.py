@@ -1261,6 +1261,7 @@ class ConformalForestClassifier(
 
         The parameter search follows the procedure suggested by Angelopoulos,
         Bates, Jordan & Jitendra Malik (2021):
+
         - `k_star_` is the (1-alpha)-quantile of the rank of true y in the
           out-of-bag predictions
         - `lambda_star_` is chosen from the candidates
