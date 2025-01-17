@@ -11,12 +11,11 @@ methods random forest classifiers that output prediction sets and prediction
 intervals using conformal prediction.
 
     - For classification, the prediction sets are obtained using adaptive
-prediction set (APS) proposed by Romano, Sesia & Candès (2020). The code also
-provides regularization introduced by Angelopoulos, Bates, Malik & Jordan
-(2021) to encourage smaller sets.
-    - For regression, the prediction intervals are obtained using the
-Jackknife+ and CV+ on the residuals proposed by Barber, Candès, Ramdas &
-Tibshirani (2021).
+      prediction set (APS) proposed by Romano, Sesia & Candès (2020). The code also
+      provides regularization introduced by Angelopoulos, Bates, Malik & Jordan
+      (2021) to encourage smaller sets.
+    - For regression, the prediction intervals are obtained using the Jackknife+ and
+      CV+ on the residuals proposed by Barber, Candès, Ramdas & Tibshirani (2021).
 
 The method, specified in the ``method`` parameter, includes:
 
@@ -314,7 +313,7 @@ class ConformalClassifierMixin:
 
             - 'size': returns the average size of prediction sets
             - 'coverage': returns the empirical coverage (proportion of sets that
-            contain true labels)
+              contain true labels)
             - 'both': returns a tuple of (coverage, average_size)
 
         sample_weight : array-like of shape (n_samples,), default=None
@@ -671,7 +670,7 @@ class BaseConformalForest(BaseForest):
         `method='cv'` or `method='bootstrap'`.
 
         - If `method='cv'`, the data will be split into K folds and the trees
-        will be fitted on K-1 folds.
+          will be fitted on K-1 folds.
         - If `method='bootstrap'`, the trees will be fitted on bootstrap
         subsamples.
 
@@ -1231,9 +1230,9 @@ class ConformalForestClassifier(
         automatically:
 
         - k is set to the (1-alpha)-quantile of the rank of true labels in the
-        out-of-bag predictions
+          out-of-bag predictions
         - lambda is selected from `[0.001, 0.01, 0.1, 0.2, 0.5, 1]` using a
-        held-out validation set to minimize prediction set size
+          held-out validation set to minimize prediction set size
 
         Parameters
         ----------
@@ -2432,11 +2431,11 @@ class CoverForestRegressor(ConformalForestRegressor):
     The class supports three subsampling methods for out-of-sample calibration:
 
     - 'cv': Uses K-fold cross-validation to split the training set. This method
-    is referred to as CV+.
+      is referred to as CV+.
     - 'bootstrap': Uses bootstrap subsampling on the training set. This method
-    is referred to as Jackknife+-after-Bootstrap.
+      is referred to as Jackknife+-after-Bootstrap.
     - 'split': Uses train-test split on the training set. This method
-    is referred to as split conformal.
+      is referred to as split conformal.
 
     Note that another well-known method, Jackknife+, is a special case of CV+
     with one sample in each fold.

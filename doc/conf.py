@@ -88,3 +88,24 @@ intersphinx_mapping = {
     "pandas": ("https://pandas.pydata.org/pandas-docs/stable/", None),
     "joblib": ("https://joblib.readthedocs.io/en/latest/", None),
 }
+
+# -- Options for myst-nb --------------------------------------------------
+myst_heading_anchors = 2
+nb_execution_mode = "off"
+nb_mime_priority_overrides = [("spelling", "text/plain", 0)]
+myst_enable_extensions = [
+    "colon_fence",
+    "amsmath",
+    "dollarmath",
+]
+
+# -- Options for mathjax --------------------------------------------------
+mathjax3_config = {
+    "tex": {
+        "macros": {
+            "prox": r"\mathrm{prox}",
+            "min": r"\mathrm{min}",
+            "argmin": r"\mathrm{argmin}",
+        }
+    }
+}
