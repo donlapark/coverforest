@@ -488,6 +488,7 @@ class BaseConformalForest(BaseForest):
         **BaseForest._parameter_constraints,
         "method": [StrOptions({"bootstrap", "cv", "split"})],
         "cv": [Interval(Integral, 2, None, closed="left"), "cv_object"],
+        "n_forests_per_fold": [Interval(Integral, 1, None, closed="left")],
         "resample_n_estimators": ["boolean"],
     }
 
@@ -500,6 +501,7 @@ class BaseConformalForest(BaseForest):
         n_estimators=100,
         method="cv",
         cv=5,
+        n_forests_per_fold=1,
         resample_n_estimators=True,
         oob_score=False,
         n_jobs=None,
@@ -524,6 +526,7 @@ class BaseConformalForest(BaseForest):
         self.n_estimators = n_estimators
         self.method = method
         self.cv = cv
+        self.n_forests_per_fold = n_forests_per_fold
         self.resample_n_estimators = resample_n_estimators
         self.class_weight = class_weight
 
@@ -733,19 +736,8 @@ class BaseConformalForest(BaseForest):
                 cv = list(cv)
             else:
                 self._n_cv_folds = len(cv)
-            if self.n_estimators < self._n_cv_folds:
-                warn(
-                    f"`n_estimators={self.n_estimators}` is smaller than the number of"
-                    f" folds ({self._n_cv_folds}). It is recommended to choose a higher"
-                    " value of `n_estimators`."
-                )
-            n_estimators = (self.n_estimators // self._n_cv_folds) * self._n_cv_folds
-            if self.n_estimators != n_estimators:
-                print(
-                    f"`n_estimators={self.n_estimators}` is not divisible by the number"
-                    f" of folds ({self._n_cv_folds}). Set `n_estimators={n_estimators}`"
-                    " instead."
-                )
+
+            n_estimators = self.n_forests_per_fold * self._n_cv_folds
 
             self._n_samples_bootstrap = None
 
@@ -1166,6 +1158,7 @@ class ConformalForestClassifier(
         repeat_params_search=True,
         allow_empty_sets=True,
         randomized=True,
+        n_forests_per_fold=1,
         resample_n_estimators=True,
         estimator_params=tuple(),
         oob_score=False,
@@ -1182,6 +1175,7 @@ class ConformalForestClassifier(
             n_estimators=n_estimators,
             method=method,
             cv=cv,
+            n_forests_per_fold=n_forests_per_fold,
             resample_n_estimators=resample_n_estimators,
             oob_score=oob_score,
             n_jobs=n_jobs,
@@ -1297,8 +1291,17 @@ class ConformalForestClassifier(
         sample_weight : array-like of shape (n_samples,), default=None
             Sample weights.
 
+        Returns
+        -------
+        k_star : int
+            The value of k obtained from the (1-alpha) of the observed ranks of
+            the training targets.
+
+        lambda_star : float
+            The value of lambda obtained from the grid search cross-validation.
+
         References
-        __________
+        ----------
         .. [1] Anastasios Nikolas Angelopoulos, Stephen Bates,
                Michael I. Jordan & Jitendra Malik, "Uncertainty Sets for Image
                Classifiers using Conformal Prediction", ICLR 2021.
@@ -1332,7 +1335,8 @@ class ConformalForestClassifier(
                 ]
                 scores_compare = true_label_scores < self.oob_pred_[:, :, 0]
                 y_ranks = scores_compare.sum(axis=1).ravel()
-                self.k_star_ = np.quantile(y_ranks, 1 - alpha, method="higher") + 1
+                k_star = np.quantile(y_ranks, 1 - alpha, method="higher") + 1
+                self.k_star_ = k_star
 
             if self.lambda_star_ is None:
                 X1, X2, y1, _, sw1, _ = train_test_split(
@@ -1351,9 +1355,11 @@ class ConformalForestClassifier(
                     sum_size = y_set_pred.sum()
                     if sum_size < best_sum_size:
                         best_sum_size = sum_size
-                        best_lambda_ = lambda_
+                        lambda_star = lambda_
 
-                self.lambda_star_ = best_lambda_
+                self.lambda_star_ = lambda_star
+
+        return k_star, lambda_star
 
     def _compute_train_giqs(self, oob_pred, y):
         """Compute the regularized generalized inverse quantile conformity
@@ -1728,6 +1734,7 @@ class ConformalForestRegressor(
         n_estimators=100,
         method="cv",
         cv=5,
+        n_forests_per_fold=1,
         resample_n_estimators=True,
         estimator_params=tuple(),
         oob_score=False,
@@ -1743,6 +1750,7 @@ class ConformalForestRegressor(
             n_estimators=n_estimators,
             method=method,
             cv=cv,
+            n_forests_per_fold=n_forests_per_fold,
             resample_n_estimators=resample_n_estimators,
             oob_score=oob_score,
             n_jobs=n_jobs,
@@ -1932,29 +1940,6 @@ class CoverForestClassifier(ConformalForestClassifier):
         number of folds used. See the module sklearn.model_selection module for
         the list of possible cross-validation objects.
 
-    n_subestimators : int, default=100
-        Used when `method='cv'`. The number of
-        `sklearn.tree.DecisionTreeClassifier` in each
-        `FastRandomForestClassifier` sub-estimator.
-
-    bootstrap : bool, default=True
-        Whether bootstrap samples are used when building trees. If False, the
-        whole dataset is used to build each tree.
-        When `method='cv'`, the value will be passed on to the
-        `FastRandomForestClassifier` sub-estimators.
-
-    max_samples : int or float, default=None
-        If bootstrap is True, the number of samples to draw from X
-        to train each base estimator.
-
-        - If None (default), then draw `X.shape[0]` samples.
-        - If int, then draw `max_samples` samples.
-        - If float, then draw `max(round(n_samples * max_samples), 1)` samples.
-
-        Thus, `max_samples` should be in the interval `(0.0, 1.0]`.
-        When `method='cv'`, the value will be passed on to the
-        `FastRandomForestClassifier` sub-estimators.
-
     k_init : int or "auto", default="auto"
         Initial value for the parameter k that penalizes any set prediction
         that contains more than k classes.
@@ -1976,11 +1961,33 @@ class CoverForestClassifier(ConformalForestClassifier):
         smaller prediction sets. If False, the predictions will have more
         conservative coverage.
 
+    n_forests_per_fold : int, default=1
+        Used when `method='cv'`. The number of the forests to be fitted on each
+        combination of K-1 folds.
+
     resample_n_estimators : bool, default=True
         Used when `method='bootstrap'`. If True, resample the value of
         `n_estimators` following the procedure in Kim, Xu & Barber (2020).
         Specifically, a new number of estimators is sampled from
         Binomial(n_estimators, 1 / (1 - n_samples)**max_samples).
+
+    bootstrap : bool, default=True
+        Whether bootstrap samples are used when building trees. If False, the
+        whole dataset is used to build each tree.
+        When `method='cv'`, the value will be passed on to the
+        `FastRandomForestClassifier` sub-estimators.
+
+    max_samples : int or float, default=None
+        If bootstrap is True, the number of samples to draw from X
+        to train each base estimator.
+
+        - If None (default), then draw `X.shape[0]` samples.
+        - If int, then draw `max_samples` samples.
+        - If float, then draw `max(round(n_samples * max_samples), 1)` samples.
+
+        Thus, `max_samples` should be in the interval `(0.0, 1.0]`.
+        When `method='cv'`, the value will be passed on to the
+        `FastRandomForestClassifier` sub-estimators.
 
     criterion : {"gini", "entropy", "log_loss"}, default="gini"
         The function to measure the quality of a split. Supported criteria are
@@ -2231,7 +2238,6 @@ class CoverForestClassifier(ConformalForestClassifier):
         **DecisionTreeClassifier._parameter_constraints,
         "method": [StrOptions({"bootstrap", "cv", "split"})],
         "cv": [Interval(Integral, 2, None, closed="left"), "cv_object"],
-        "n_subestimators": [Interval(Integral, 1, None, closed="left")],
         "k_init": [StrOptions({"auto"}), Interval(Integral, 0, None, closed="left")],
         "lambda_init": [
             StrOptions({"auto"}),
@@ -2257,12 +2263,12 @@ class CoverForestClassifier(ConformalForestClassifier):
         *,
         method="cv",
         cv=5,
-        n_subestimators=50,
         k_init="auto",
         lambda_init="auto",
         repeat_params_search=True,
         allow_empty_sets=True,
         randomized=True,
+        n_forests_per_fold=1,
         resample_n_estimators=True,
         criterion="gini",
         max_depth=None,
@@ -2299,7 +2305,7 @@ class CoverForestClassifier(ConformalForestClassifier):
 
         if isinstance(method, str) and method == "cv":
             estimator = FastRandomForestClassifier(
-                n_estimators=n_subestimators,
+                n_estimators=n_estimators,
                 criterion=criterion,
                 max_depth=max_depth,
                 min_samples_split=min_samples_split,
@@ -2338,6 +2344,7 @@ class CoverForestClassifier(ConformalForestClassifier):
             repeat_params_search=repeat_params_search,
             allow_empty_sets=allow_empty_sets,
             randomized=randomized,
+            n_forests_per_fold=n_forests_per_fold,
             resample_n_estimators=resample_n_estimators,
             max_samples=max_samples,
             oob_score=oob_score,
@@ -2348,7 +2355,6 @@ class CoverForestClassifier(ConformalForestClassifier):
             class_weight=class_weight,
         )
 
-        self.n_subestimators = n_subestimators
         self.bootstrap = bootstrap
         self.criterion = criterion
         self.max_depth = max_depth
@@ -2398,28 +2404,9 @@ class CoverForestRegressor(ConformalForestRegressor):
         number of folds used. See the module sklearn.model_selection module for
         the list of possible cross-validation objects.
 
-    n_subestimators : int, default=100
-        Used when `method='cv'`. The number of
-        `sklearn.tree.DecisionTreeClassifier` in each
-        `FastRandomForestClassifier` sub-estimator.
-
-    bootstrap : bool, default=True
-        Whether bootstrap samples are used when building trees. If False, the
-        whole dataset is used to build each tree.
-        When `method='cv'`, the value will be passed on to the
-        `FastRandomForestClassifier` sub-estimators.
-
-    max_samples : int or float, default=None
-        If bootstrap is True, the number of samples to draw from X
-        to train each base estimator.
-
-        - If None (default), then draw `X.shape[0]` samples.
-        - If int, then draw `max_samples` samples.
-        - If float, then draw `max(round(n_samples * max_samples), 1)` samples.
-
-        Thus, `max_samples` should be in the interval `(0.0, 1.0]`.
-        When `method='cv'`, the value will be passed on to the
-        `FastRandomForestClassifier` sub-estimators.
+    n_forests_per_fold : int, default=1
+        Used when `method='cv'`. The number of the forests to be fitted on each
+        combination of K-1 folds.
 
     resample_n_estimators : bool, default=True
         Used when `method='bootstrap'`. If True, resample the value of
@@ -2509,6 +2496,24 @@ class CoverForestRegressor(ConformalForestRegressor):
 
         ``N``, ``N_t``, ``N_t_R`` and ``N_t_L`` all refer to the weighted sum,
         if ``sample_weight`` is passed.
+
+    max_samples : int or float, default=None
+        If bootstrap is True, the number of samples to draw from X
+        to train each base estimator.
+
+        - If None (default), then draw `X.shape[0]` samples.
+        - If int, then draw `max_samples` samples.
+        - If float, then draw `max(round(n_samples * max_samples), 1)` samples.
+
+        Thus, `max_samples` should be in the interval `(0.0, 1.0]`.
+        When `method='cv'`, the value will be passed on to the
+        `FastRandomForestClassifier` sub-estimators.
+
+    bootstrap : bool, default=True
+        Whether bootstrap samples are used when building trees. If False, the
+        whole dataset is used to build each tree.
+        When `method='cv'`, the value will be passed on to the
+        `FastRandomForestClassifier` sub-estimators.
 
     oob_score : bool or callable, default=False
         Whether to use out-of-bag samples to estimate the generalization score.
@@ -2643,7 +2648,6 @@ class CoverForestRegressor(ConformalForestRegressor):
         **DecisionTreeRegressor._parameter_constraints,
         "method": [StrOptions({"bootstrap", "cv", "split"})],
         "cv": [Interval(Integral, 2, None, closed="left"), "cv_object"],
-        "n_subestimators": [Interval(Integral, 1, None, closed="left")],
         "resample_n_estimators": ["boolean"],
     }
     _parameter_constraints.pop("splitter")
@@ -2654,7 +2658,7 @@ class CoverForestRegressor(ConformalForestRegressor):
         *,
         method="cv",
         cv=5,
-        n_subestimators=50,
+        n_forests_per_fold=1,
         resample_n_estimators=True,
         criterion="squared_error",
         max_depth=None,
@@ -2690,7 +2694,7 @@ class CoverForestRegressor(ConformalForestRegressor):
 
         if isinstance(method, str) and method == "cv":
             estimator = FastRandomForestRegressor(
-                n_estimators=n_subestimators,
+                n_estimators=n_estimators,
                 criterion=criterion,
                 max_depth=max_depth,
                 min_samples_split=min_samples_split,
@@ -2724,6 +2728,7 @@ class CoverForestRegressor(ConformalForestRegressor):
             n_estimators=n_estimators,
             method=method,
             cv=cv,
+            n_forests_per_fold=n_forests_per_fold,
             resample_n_estimators=resample_n_estimators,
             max_samples=max_samples,
             oob_score=oob_score,
@@ -2733,7 +2738,6 @@ class CoverForestRegressor(ConformalForestRegressor):
             warm_start=warm_start,
         )
 
-        self.n_subestimators = n_subestimators
         self.bootstrap = bootstrap
         self.criterion = criterion
         self.max_depth = max_depth

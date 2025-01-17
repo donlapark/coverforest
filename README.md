@@ -7,9 +7,9 @@
 A simple and efficient implementation of conformal random forests for both classification and regression tasks. **coverforest** extends [scikit-learn](https://scikit-learn.org)'s random forest implementation to provide prediction sets/intervals with guaranteed coverage using conformal prediction methods.
 
 **coverforest** provides three conformal prediction methods for random forests:
-- CV+ (Cross-Validation+) [[1](#1), [2](#2)]
-- Jackknife+-after-Bootstrap [[3]](#3)
-- Split Conformal [[4]](#4)
+- CV+ (Cross-Validation+) [[1](#1), [2](#2)].
+- Jackknife+-after-Bootstrap [[3]](#3).
+- Split Conformal [[4]](#4).
 
 The library provides two main classes: `CoverForestRegressor` for interval prediction and `CoverForestClassifier`. for set prediction.
 Here are quick runs of the two classes:
@@ -38,7 +38,7 @@ The classifier includes two regularization parameters $k$ and $\lambda$ that enc
 clf = CoverForestClassifier(n_estimators=100, method='cv', k_init=2, lambda_init=0.1)
 ```
 
-Automatic searching for suitable $k$ and $\lambda$ is also possible by specifying `k_init="auto"` and `lambda_init="auto"`, which are the default values when instantiating a `CoverForestClassifier` model.
+Automatic searching for suitable $k$ and $\lambda$ is also possible by specifying `k_init="auto"` and `lambda_init="auto"`, which are the default values of `CoverForestClassifier` models.
 
 ### Performance Tips
 
@@ -73,7 +73,7 @@ pip install .
 
 - [MAPIE](https://github.com/scikit-learn-contrib/MAPIE): A Python package that provides scikit-learn-compatible wrappers for conformal classification and regression
 - [conforest](https://github.com/knrumsey/conforest) An R implementation of random forest with inductive conformal prediction.
-- [clover](https://github.com/Monoxido45/clover) A Python implementation of a regression forest method for conditional coverage (e.g. $`P(Y \vert X =x)`$) guarantee.
+- [clover](https://github.com/Monoxido45/clover) A Python implementation of a regression forest method for conditional coverage ($`P(Y \vert X =x)`$) guarantee.
 - [Conformal Prediction](https://github.com/aangelopoulos/conformal-prediction): Jupyter Notebook demonstrations of conformal prediction on various tasks, such as image classification, image segmentation, times series forecasting, and outlier detection
 - [TorchCP](https://github.com/ml-stat-Sustech/TorchCP) A Python toolbox for Conformal Prediction in Deep Learning built on top of PyTorch
 - [crepes](https://github.com/henrikbostrom/crepes) A Python package that implements standard and Mondrian conformal classifiers as well as standard, normalized and Mondrian conformal regressors and predictive systems.
