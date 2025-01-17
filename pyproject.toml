@@ -69,12 +69,15 @@ test = { cmd = "pytest -vsl --cov=coverforest --cov-report=xml coverforest" }
 [tool.pixi.feature.doc.dependencies]
 matplotlib = "*"
 numpydoc = "*"
-pydata-sphinx-theme = "*"
+pandas = "*"
+sphinx-book-theme = "*"
 setuptools-scm = ">=8"  # needed for the versioning
 sphinx = "*"
 sphinx-design = "*"
 sphinx-gallery = "*"
 sphinx-prompt = "*"
+sphinx-copybutton = "*"
+myst-nb = "*"
 
 [tool.pixi.feature.doc.tasks]
 build-doc = { cmd = "make html", cwd = "doc" }

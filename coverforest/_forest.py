@@ -6,9 +6,10 @@ conformal prediction methods to output set predictions.
 
 The module structure is the following:
 
-- The ``CoverForestClassifier`` and ``CoverForestRegressor`` classes each provide three
+The ``CoverForestClassifier`` and ``CoverForestRegressor`` classes each provide three
 methods random forest classifiers that output prediction sets and prediction
 intervals using conformal prediction.
+
     - For classification, the prediction sets are obtained using adaptive
 prediction set (APS) proposed by Romano, Sesia & Candès (2020). The code also
 provides regularization introduced by Angelopoulos, Bates, Malik & Jordan
@@ -16,7 +17,9 @@ provides regularization introduced by Angelopoulos, Bates, Malik & Jordan
     - For regression, the prediction intervals are obtained using the
 Jackknife+ and CV+ on the residuals proposed by Barber, Candès, Ramdas &
 Tibshirani (2021).
-    The method, specified in the ``method`` parameter, includes:
+
+The method, specified in the ``method`` parameter, includes:
+
     - ``method=cv``:   Random Forest with CV+ for prediction sets/intervals
     - ``method=bootstrap``:   Random Forest with Jackknife+-after-Bootstrap for
       prediction sets/intervals
@@ -241,8 +244,11 @@ class ConformalClassifierMixin:
     Notes
     -----
     Conformal classifiers output prediction sets C(X) that satisfy:
+
         P(Y ∈ C(X)) ≥ 1 - α
+
     where:
+
     - α is the desired miscoverage rate
     - The probability is taken over the pair (X,Y)
     - This guarantee holds for any data distribution, with an assumption that
@@ -250,6 +256,7 @@ class ConformalClassifierMixin:
       weaker assumption that they are exchangable.
 
     The score method supports different metrics:
+
     - 'coverage': Empirical coverage probability
     - 'size': Average size of prediction sets
     - 'both': Returns both coverage and average size.
@@ -287,7 +294,7 @@ class ConformalClassifierMixin:
 
     _estimator_type = "classifier"
 
-    def score(self, X, y, alpha=0.05, scoring="coverage", sample_weight=None):
+    def score(self, X, y, alpha=None, scoring="coverage", sample_weight=None):
         """Evaluate the prediction set on the given test data and labels.
 
         Parameters
@@ -298,12 +305,13 @@ class ConformalClassifierMixin:
         y : array-like of shape (n_samples,)
             True labels for X.
 
-        alpha : float, default=0.05
+        alpha : float, default=None
             The desired miscoverage rate. The method will construct prediction sets
             with approximately (1-alpha) coverage.
 
         scoring : {'size', 'coverage', 'both'}, default='size'
             The scoring metric to use:
+
             - 'size': returns the average size of prediction sets
             - 'coverage': returns the empirical coverage (proportion of sets that
             contain true labels)
@@ -319,6 +327,10 @@ class ConformalClassifierMixin:
             If scoring='coverage': returns empirical coverage (float)
             If scoring='both': returns (coverage, average_size) tuple.
         """
+
+        if alpha is None:
+            alpha = self.alpha_default
+
         y = _check_y(y, estimator=self)
         check_consistent_length(X, y, sample_weight)
         _, y_set = self.predict(X, alpha, binary_output=True)
@@ -362,8 +374,11 @@ class ConformalRegressorMixin:
     Notes
     -----
     Conformal regressors output prediction intervals [l(X), u(X)] that satisfy:
+
         P(l(X) ≤ Y ≤ u(X)) ≥ 1 - α
+
     where:
+
     - α is the desired miscoverage rate
     - The probability is taken over the pair (X,Y)
     - This guarantee holds for any data distribution with an assumption that
@@ -371,6 +386,7 @@ class ConformalRegressorMixin:
       weaker assumption that they are exchangable.
 
     The score method supports different metrics:
+
     - 'coverage': Empirical coverage probability
     - 'length': Average length of prediction intervals
     - 'both': Returns both coverage and length metrics
@@ -411,7 +427,7 @@ class ConformalRegressorMixin:
 
     _estimator_type = "regressor"
 
-    def score(self, X, y, alpha=0.05, scoring="length", sample_weight=None):
+    def score(self, X, y, alpha=None, scoring="length", sample_weight=None):
         """Evaluate the prediction intervals on the given test data and labels.
 
         Parameters
@@ -422,12 +438,13 @@ class ConformalRegressorMixin:
         y : array-like of shape (n_samples,)
             True labels for X.
 
-        alpha : float, default=0.05
+        alpha : float, default=None
             The desired miscoverage rate. The method will construct prediction
             intervals with approximately (1-alpha) coverage.
 
         scoring : {'length', 'coverage', 'both'}, default='length'
             The scoring metric to use:
+
             - 'length': returns the average length of prediction intervals
             - 'coverage': returns the empirical coverage (proportion of true values in
             intervals)
@@ -443,6 +460,10 @@ class ConformalRegressorMixin:
             If scoring='coverage': returns empirical coverage (float)
             If scoring='both': returns (coverage, average_length) tuple
         """
+
+        if alpha is None:
+            alpha = self.alpha_default
+
         y = _check_y(y, estimator=self)
         check_consistent_length(X, y, sample_weight)
         _, y_intervals = self.predict(X, alpha)
@@ -648,6 +669,7 @@ class BaseConformalForest(BaseForest):
 
         This method will be called when calling the `fit` method with
         `method='cv'` or `method='bootstrap'`.
+
         - If `method='cv'`, the data will be split into K folds and the trees
         will be fitted on K-1 folds.
         - If `method='bootstrap'`, the trees will be fitted on bootstrap
@@ -700,13 +722,13 @@ class BaseConformalForest(BaseForest):
             self._n_samples_bootstrap = _get_n_samples_bootstrap(
                 n_samples=self._n_samples, max_samples=self.max_samples
             )
+            binom_prop = np.exp(
+                self._n_samples_bootstrap * np.log(1 - 1 / (self._n_samples + 1))
+            )
             if self.resample_n_estimators:
                 n_estimators = np.maximum(
                     2,
-                    random_state.binomial(
-                        self.n_estimators,
-                        (1 - 1 / (self._n_samples + 1)) ** self._n_samples_bootstrap,
-                    ),
+                    random_state.binomial(self.n_estimators / binom_prop, binom_prop),
                 )
             else:
                 n_estimators = self._n_samples_bootstrap
@@ -1158,6 +1180,7 @@ class ConformalForestClassifier(
         repeat_params_search=True,
         allow_empty_sets=True,
         randomized=True,
+        alpha_default=None,
         n_forests_per_fold=1,
         resample_n_estimators=True,
         estimator_params=tuple(),
@@ -1191,6 +1214,7 @@ class ConformalForestClassifier(
         self.repeat_params_search = repeat_params_search
         self.randomized = randomized
         self.allow_empty_sets = allow_empty_sets
+        self.alpha_default = alpha_default
 
     @_fit_context(prefer_skip_nested_validation=True)
     def fit(self, X, y, alpha=0.05, calib_size=0.3, valid_size=0.3, sample_weight=None):
@@ -1205,6 +1229,7 @@ class ConformalForestClassifier(
         classes, while lambda controls the strength of this penalty. When
         `k_init='auto'` and/or `lambda_init='auto'`, these parameters are chosen
         automatically:
+
         - k is set to the (1-alpha)-quantile of the rank of true labels in the
         out-of-bag predictions
         - lambda is selected from `[0.001, 0.01, 0.1, 0.2, 0.5, 1]` using a
@@ -1250,12 +1275,17 @@ class ConformalForestClassifier(
         """
 
         self.search_k_and_lambda(X, y, alpha, calib_size, valid_size, sample_weight)
-        print(f"Fitting with k = {self.k_star_} and lambda = {self.lambda_star_}.")
+
+        if self.verbose:
+            print(f"Fitting with k = {self.k_star_} and lambda = {self.lambda_star_}.")
+
         self._fit_wrapper(X, y, calib_size, sample_weight)
 
         return self
 
-    def search_k_and_lambda(self, X, y, alpha, calib_size, valid_size, sample_weight):
+    def search_k_and_lambda(
+        self, X, y, alpha=0.05, calib_size=0.3, valid_size=0.3, sample_weight=None
+    ):
         """Search for optimal values of k and lambda parameters and store them as
         attributes `k_star_` and `lambda_star_`, respectively.
 
@@ -1279,14 +1309,14 @@ class ConformalForestClassifier(
         y : array-like of shape (n_samples,) or (n_samples, n_outputs)
             The target values.
 
-        alpha : float
+        alpha : float, default=0.05
             The desired miscoverage rate.
 
-        calib_size : float
+        calib_size : float, default=0.3
             Used when `method='split'`. The proportion of training samples to
             use for split conformal prediction.
 
-        valid_size : float
+        valid_size : float, default=0.3
             The proportion of samples to use for validation of lambda.
 
         sample_weight : array-like of shape (n_samples,), default=None
@@ -1321,7 +1351,8 @@ class ConformalForestClassifier(
             self.lambda_star_ = self.lambda_init
 
         if self.k_star_ is None or self.lambda_star_ is None:
-            print("Searching regularization parameters...")
+            if self.verbose:
+                print("Searching regularization parameters...")
             X, y, sample_weight = self._check_data(X, y, sample_weight)
             if y.ndim == 2 and y.shape[1] == 1:
                 y = np.ravel(y)
@@ -1601,6 +1632,9 @@ class ConformalForestClassifier(
             set.
         """
 
+        if alpha is None:
+            alpha = self.alpha_default
+
         if self.method in ["cv", "bootstrap"]:
             y_out = self._predict_cv(X, alpha, binary_output, num_threads)
         else:
@@ -1738,6 +1772,7 @@ class ConformalForestRegressor(
         n_estimators=100,
         method="cv",
         cv=5,
+        alpha_default=None,
         n_forests_per_fold=1,
         resample_n_estimators=True,
         estimator_params=tuple(),
@@ -1763,6 +1798,8 @@ class ConformalForestRegressor(
             warm_start=warm_start,
             max_samples=max_samples,
         )
+
+        self.alpha_default = alpha_default
 
     @_fit_context(prefer_skip_nested_validation=True)
     def fit(self, X, y, alpha=0.05, calib_size=0.3, sample_weight=None):
@@ -1819,6 +1856,9 @@ class ConformalForestRegressor(
             Prediction intervals for each sample. First column contains lower
             bounds, second column contains upper bounds.
         """
+
+        if alpha is None:
+            alpha = self.alpha_default
 
         if self.method in ["cv", "bootstrap"]:
             y_out = self._predict_cv(X, alpha, num_threads)
@@ -1916,12 +1956,13 @@ class CoverForestClassifier(ConformalForestClassifier):
     constructed using the Adaptive Prediction Set (APS) method.
 
     The class supports three subsampling methods for out-of-sample calibration:
+
     - 'cv': Uses K-fold cross-validation to split the training set. This method
-    is referred to as CV+.
+      is referred to as CV+.
     - 'bootstrap': Uses bootstrap subsampling on the training set. This method
-    is referred to as Jackknife+-after-Bootstrap.
+      is referred to as Jackknife+-after-Bootstrap.
     - 'split': Uses train-test split on the training set. This method
-    is referred to as split conformal.
+      is referred to as split conformal.
 
     Note that another well-known method, Jackknife+, is a special case of CV+
     with one sample in each fold.
@@ -1933,6 +1974,7 @@ class CoverForestClassifier(ConformalForestClassifier):
 
     method : {'cv', 'bootstrap', 'split'}, default='cv'
         The conformal prediction method to use:
+
         - 'cv': Uses CV+ for conformal prediction
         - 'bootstrap': Uses Jackknife+-after-Bootstrap
         - 'split': Uses split conformal prediction
@@ -1962,6 +2004,11 @@ class CoverForestClassifier(ConformalForestClassifier):
         If True, adds randomization during the label selection which yields
         smaller prediction sets. If False, the predictions will have more
         conservative coverage.
+
+    alpha_default : float, default=None
+        The default value of miscoverage rate `alpha` that will be passed to
+        `predict()` whenever it is called indirectly i.e. via scikit-learn's
+        `GridSearchCV`.
 
     n_forests_per_fold : int, default=1
         Used when `method='cv'`. The number of the forests to be fitted on each
@@ -2122,6 +2169,7 @@ class CoverForestClassifier(ConformalForestClassifier):
 
     monotonic_cst : array-like of int of shape (n_features), default=None
         Indicates the monotonicity constraint to enforce on each feature.
+
           - 1: monotonic increase
           - 0: no constraint
           - -1: monotonic decrease
@@ -2142,7 +2190,7 @@ class CoverForestClassifier(ConformalForestClassifier):
 
     estimators_ : list of `FastRandomForestClassifier` or \
     `sklearn.tree.DecisionTreeClassifier`
-        The collection of fitted sub-estimators. It will a list of
+        The collection of fitted sub-estimators. A list of
         `FastRandomForestClassifier` if `method='cv'` and a list of
         `sklearn.tree.DecisionTreeClassifier` otherwise.
 
@@ -2231,8 +2279,6 @@ class CoverForestClassifier(ConformalForestClassifier):
     ...                           random_state=0, shuffle=False)
     >>> clf = CoverForestClassifier(n_estimators=10, method='cv', random_state=0)
     >>> clf.fit(X, y)
-    Searching regularization parameters...
-    Fitting with k = 2 and lambda = 0.001...
     CoverForestClassifier(...)
     >>> print(clf.predict(X[:1]))
     (array([0]), [array([0, 1])])
@@ -2252,6 +2298,7 @@ class CoverForestClassifier(ConformalForestClassifier):
         "repeat_params_search": ["boolean"],
         "allow_empty_sets": ["boolean"],
         "randomized": ["boolean"],
+        "alpha_default": [None, Interval(Real, 0, None, closed="right")],
         "resample_n_estimators": ["boolean"],
         "class_weight": [
             StrOptions({"balanced_subsample", "balanced"}),
@@ -2273,6 +2320,7 @@ class CoverForestClassifier(ConformalForestClassifier):
         repeat_params_search=True,
         allow_empty_sets=True,
         randomized=True,
+        alpha_default=None,
         n_forests_per_fold=1,
         resample_n_estimators=True,
         criterion="gini",
@@ -2349,6 +2397,7 @@ class CoverForestClassifier(ConformalForestClassifier):
             repeat_params_search=repeat_params_search,
             allow_empty_sets=allow_empty_sets,
             randomized=randomized,
+            alpha_default=alpha_default,
             n_forests_per_fold=n_forests_per_fold,
             resample_n_estimators=resample_n_estimators,
             max_samples=max_samples,
@@ -2381,6 +2430,7 @@ class CoverForestRegressor(ConformalForestRegressor):
     above 1-alpha, where alpha is a user-specified error rate.
 
     The class supports three subsampling methods for out-of-sample calibration:
+
     - 'cv': Uses K-fold cross-validation to split the training set. This method
     is referred to as CV+.
     - 'bootstrap': Uses bootstrap subsampling on the training set. This method
@@ -2398,6 +2448,7 @@ class CoverForestRegressor(ConformalForestRegressor):
 
     method : {'cv', 'bootstrap', 'split'}, default='cv'
         The conformal prediction method to use:
+
         - 'cv': Uses CV+ for conformal prediction
         - 'bootstrap': Uses Jackknife+-after-Bootstrap
         - 'split': Uses split conformal prediction
@@ -2406,6 +2457,11 @@ class CoverForestRegressor(ConformalForestRegressor):
         Used when `method='cv'`. If an integer is provided, then it is the
         number of folds used. See the module sklearn.model_selection module for
         the list of possible cross-validation objects.
+
+    alpha_default : float, default=None
+        The default value of miscoverage rate `alpha` that will be passed to
+        `predict()` whenever it is called indirectly i.e. via scikit-learn's
+        `GridSearchCV`.
 
     n_forests_per_fold : int, default=1
         Used when `method='cv'`. The number of the forests to be fitted on each
@@ -2551,6 +2607,7 @@ class CoverForestRegressor(ConformalForestRegressor):
 
     monotonic_cst : array-like of int of shape (n_features), default=None
         Indicates the monotonicity constraint to enforce on each feature.
+
           - 1: monotonically increasing
           - 0: no constraint
           - -1: monotonically decreasing
@@ -2569,7 +2626,7 @@ class CoverForestRegressor(ConformalForestRegressor):
 
     estimators_ : list of `FastRandomForestRegressor` or \
     `sklearn.tree.DecisionTreeRegressor`
-        The collection of fitted sub-estimators. It will a list of
+        The collection of fitted sub-estimators. A list of
         `FastRandomForestClassifier` if `method='cv'` and a list of
         `sklearn.tree.DecisionTreeRegressor` otherwise.
 
@@ -2655,6 +2712,7 @@ class CoverForestRegressor(ConformalForestRegressor):
         **DecisionTreeRegressor._parameter_constraints,
         "method": [StrOptions({"bootstrap", "cv", "split"})],
         "cv": [Interval(Integral, 2, None, closed="left"), "cv_object"],
+        "alpha_default": [None, Interval(Real, 0, None, closed="right")],
         "resample_n_estimators": ["boolean"],
     }
     _parameter_constraints.pop("splitter")
@@ -2665,6 +2723,7 @@ class CoverForestRegressor(ConformalForestRegressor):
         *,
         method="cv",
         cv=5,
+        alpha_default=None,
         n_forests_per_fold=1,
         resample_n_estimators=True,
         criterion="squared_error",
@@ -2735,6 +2794,7 @@ class CoverForestRegressor(ConformalForestRegressor):
             n_estimators=n_estimators,
             method=method,
             cv=cv,
+            alpha_default=alpha_default,
             n_forests_per_fold=n_forests_per_fold,
             resample_n_estimators=resample_n_estimators,
             max_samples=max_samples,

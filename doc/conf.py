@@ -28,10 +28,11 @@ extensions = [
     "sphinx.ext.autodoc",
     "sphinx.ext.autosummary",
     "sphinx.ext.intersphinx",
-    "sphinx_design",
-    "sphinx-prompt",
-    "sphinx_gallery.gen_gallery",
-    "numpydoc",
+    "sphinx.ext.mathjax",
+    "sphinx.ext.napoleon",
+    "sphinx.ext.viewcode",
+    "sphinx_copybutton",
+    "myst_nb",
 ]
 
 templates_path = ["_templates"]
@@ -44,44 +45,30 @@ default_role = "literal"
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
 
-html_theme = "pydata_sphinx_theme"
+html_theme = "sphinx_book_theme"
 html_static_path = ["_static"]
-html_style = "css/coverforest.css"
-html_logo = "_static/img/logo.png"
-# html_favicon = "_static/img/favicon.ico"
-html_css_files = [
-    "css/coverforest.css",
-]
-html_sidebars = {
-    "quick_start": [],
-    "user_guide": [],
-    "auto_examples/index": [],
-}
+# html_style = "css/coverforest.css"
+html_logo = "_static/img/coverforest_96.png"
+html_favicon = "_static/img/coverforest.ico"
 
 html_theme_options = {
-    "external_links": [],
-    "github_url": "https://github.com/donlapark/coverforest",
-    # "twitter_url": "https://twitter.com/pandas_dev",
-    "use_edit_page_button": True,
-    "show_toc_level": 1,
-    # "navbar_align": "right",  # For testing that the navbar items align properly
+    "repository_url": "https://github.com/donlapark/coverforest",
+    "repository_branch": "main",
+    "path_to_docs": "docs/",
+    "use_repository_button": True,
+    "use_fullscreen_button": False,
+    "pygments_light_style": "tango",
+    "pygments_dark_style": "monokai",
+    "launch_buttons": {
+        "colab_url": "https://colab.research.google.com",
+        "binderhub_url": "https://mybinder.org",
+        "notebook_interface": "jupyterlab",
+    },
 }
 
-html_context = {
-    "github_user": "donlapark",
-    "github_repo": "coverforest",
-    "github_version": "main",
-    "doc_path": "doc",
-}
+master_doc = "index"
 
-# -- Options for autodoc ------------------------------------------------------
-
-autodoc_default_options = {
-    "members": True,
-    "inherited-members": True,
-}
-
-# generate autosummary even if no references
+todo_include_todos = False
 autosummary_generate = True
 
 # -- Options for numpydoc -----------------------------------------------------
@@ -100,17 +87,4 @@ intersphinx_mapping = {
     "matplotlib": ("https://matplotlib.org/", None),
     "pandas": ("https://pandas.pydata.org/pandas-docs/stable/", None),
     "joblib": ("https://joblib.readthedocs.io/en/latest/", None),
-}
-
-# -- Options for sphinx-gallery -----------------------------------------------
-
-# Generate the plot for the gallery
-plot_gallery = True
-
-sphinx_gallery_conf = {
-    "doc_module": "coverforest",
-    "backreferences_dir": os.path.join("generated"),
-    "examples_dirs": "../examples",
-    "gallery_dirs": "auto_examples",
-    "reference_url": {"coverforest": None},
 }
