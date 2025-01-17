@@ -12,9 +12,9 @@ sys.path.insert(0, os.path.abspath("../.."))
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 from importlib.metadata import version as get_version
 
-project = "Scikit-learn Project Template"
-copyright = "2016, V. Birodkar"
-author = "V. Birodkar"
+project = "coverforest"
+copyright = "2025, D. Ponnoprat"
+author = "D. Ponnoprat"
 release = get_version("coverforest")
 version = ".".join(release.split(".")[:3])
 

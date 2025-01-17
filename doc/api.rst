@@ -7,6 +7,8 @@ API Reference
 This is an example on how to document the API of your own project.
 
 .. currentmodule:: coverforest
+.. toctree::
+   :caption: Classifier
 
 Classifier
 ==========
@@ -25,16 +27,6 @@ Regressor
    :template: class.rst
 
    CoverForestRegressor
-
-Fast Random Forest
-==================
-
-.. autosummary::
-   :toctree: generated/
-   :template: class.rst
-
-   _fast_random_forest.FastRandomForestClassifier
-   _fast_random_forest.FastRandomForestRegressor
 
 
 metrics

@@ -1928,9 +1928,7 @@ class CoverForestClassifier(ConformalForestClassifier):
     Parameters
     ----------
     n_estimators : int, default=10
-        The number of sub-estimators in the forest. If `method='cv'`, the
-        sub-estimators are `FastRandomForestClassifier`; otherwise, they are
-        `DecisionTreeClassifier`.
+        The number of `sklearn.tree.DecisionTreeClassifier` in the forest.
 
     method : {'cv', 'bootstrap', 'split'}, default='cv'
         The conformal prediction method to use:
@@ -2138,11 +2136,14 @@ class CoverForestClassifier(ConformalForestClassifier):
     ----------
     estimator_ : `FastRandomForestClassifier` or `sklearn.tree.DecisionTreeClassifier`
         The child estimator template used to create the collection of fitted
-        sub-estimators.
+        sub-estimators. It will be a `FastRandomForestClassifier` if `method='cv'`
+        and `sklearn.tree.DecisionTreeClassifier` otherwise.
 
     estimators_ : list of `FastRandomForestClassifier` or \
     `sklearn.tree.DecisionTreeClassifier`
-        The collection of fitted sub-estimators.
+        The collection of fitted sub-estimators. It will a list of
+        `FastRandomForestClassifier` if `method='cv'` and a list of
+        `sklearn.tree.DecisionTreeClassifier` otherwise.
 
     k_star_ : int
         The optimal k parameter found during fitting.
@@ -2392,9 +2393,7 @@ class CoverForestRegressor(ConformalForestRegressor):
     Parameters
     ----------
     n_estimators : int, default=10
-        The number of sub-estimators in the forest. If `method='cv'`, the
-        sub-estimators are `FastRandomForestClassifier`; otherwise, they are
-        `DecisionTreeClassifier`.
+        The number of `sklearn.tree.DecisionTreeClassifier` in the forest.
 
     method : {'cv', 'bootstrap', 'split'}, default='cv'
         The conformal prediction method to use:
@@ -2562,12 +2561,16 @@ class CoverForestRegressor(ConformalForestRegressor):
 
     Attributes
     ----------
-    estimator_ : `sklearn.tree.DecisionTreeRegressor`
+    estimator_ : `FastRandomForestClassifier` or `sklearn.tree.DecisionTreeRegressor`
         The child estimator template used to create the collection of fitted
-        sub-estimators.
+        sub-estimators. It will be a `FastRandomForestClassifier` if `method='cv'`
+        and `sklearn.tree.DecisionTreeRegressor` otherwise.
 
-    estimators_ : list of DecisionTreeRegressor
-        The collection of fitted sub-estimators.
+    estimators_ : list of `FastRandomForestRegressor` or \
+    `sklearn.tree.DecisionTreeRegressor`
+        The collection of fitted sub-estimators. It will a list of
+        `FastRandomForestClassifier` if `method='cv'` and a list of
+        `sklearn.tree.DecisionTreeRegressor` otherwise.
 
     oob_pred_ : ndarray of shape (n_samples,)
         The out-of-bag predictions on the training data.
