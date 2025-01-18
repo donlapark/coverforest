@@ -293,7 +293,7 @@ class ConformalClassifierMixin:
 
     _estimator_type = "classifier"
 
-    def score(self, X, y, alpha=None, scoring="coverage", sample_weight=None):
+    def score(self, X, y, alpha=0.05, scoring="coverage", sample_weight=None):
         """Evaluate the prediction set on the given test data and labels.
 
         Parameters
@@ -327,15 +327,12 @@ class ConformalClassifierMixin:
             If scoring='both': returns (coverage, average_size) tuple.
         """
 
-        if alpha is None:
-            alpha = self.alpha_default
-
         y = _check_y(y, estimator=self)
         check_consistent_length(X, y, sample_weight)
         _, y_set = self.predict(X, alpha, binary_output=True)
 
         if scoring == "size" or scoring == "both":
-            avg_size = average_set_size_loss(y_set)
+            avg_size = average_set_size_loss(y, y_set)
             if scoring == "size":
                 return avg_size
         if scoring == "coverage" or scoring == "both":
@@ -426,7 +423,7 @@ class ConformalRegressorMixin:
 
     _estimator_type = "regressor"
 
-    def score(self, X, y, alpha=None, scoring="length", sample_weight=None):
+    def score(self, X, y, alpha=0.05, scoring="length", sample_weight=None):
         """Evaluate the prediction intervals on the given test data and labels.
 
         Parameters
@@ -460,15 +457,12 @@ class ConformalRegressorMixin:
             If scoring='both': returns (coverage, average_length) tuple
         """
 
-        if alpha is None:
-            alpha = self.alpha_default
-
         y = _check_y(y, estimator=self)
         check_consistent_length(X, y, sample_weight)
         _, y_intervals = self.predict(X, alpha)
 
         if scoring == "length" or scoring == "both":
-            avg_length = average_interval_length_loss(y_intervals)
+            avg_length = average_interval_length_loss(y, y_intervals)
             if scoring == "length":
                 return avg_length
         if scoring == "coverage" or scoring == "both":

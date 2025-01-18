@@ -103,7 +103,6 @@ myst_enable_extensions = [
 mathjax3_config = {
     "tex": {
         "macros": {
-            "prox": r"\mathrm{prox}",
             "min": r"\mathrm{min}",
             "argmin": r"\mathrm{argmin}",
         }
