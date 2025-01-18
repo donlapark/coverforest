@@ -76,6 +76,7 @@ sphinx = "*"
 sphinx-design = "*"
 sphinx-gallery = "*"
 sphinx-prompt = "*"
+sphinxcontrib-bibtex = "*"
 sphinx-copybutton = "*"
 myst-nb = "*"
 

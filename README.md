@@ -4,7 +4,7 @@
 
 ## 🌳 coverforest - Random Forest with Conformal Predictions
 
-A simple and efficient implementation of conformal random forests for both classification and regression tasks. **coverforest** extends [scikit-learn](https://scikit-learn.org)'s random forest implementation to provide prediction sets/intervals with guaranteed coverage using conformal prediction methods.
+A simple and fast implementation of conformal random forests for both classification and regression tasks. **coverforest** extends [scikit-learn](https://scikit-learn.org)'s random forest implementation to provide prediction sets/intervals with guaranteed coverage using conformal prediction methods.
 
 **coverforest** provides three conformal prediction methods for random forests:
 - CV+ (Cross-Validation+) [[1](#1), [2](#2)].
@@ -30,24 +30,6 @@ clf.fit(X_train, y_train)
 y_pred, y_sets = clf.predict(X_test, alpha=0.05)            # 95% coverage sets
 ```
 
-### Regularization in conformal set predictions
-
-The classifier includes two regularization parameters $k$ and $\lambda$ that encourage smaller prediction sets [[5]](#5).
-
-```python
-clf = CoverForestClassifier(n_estimators=100, method='cv', k_init=2, lambda_init=0.1)
-```
-
-Automatic searching for suitable $k$ and $\lambda$ is also possible by specifying `k_init="auto"` and `lambda_init="auto"`, which are the default values of `CoverForestClassifier` models.
-
-### Performance Tips
-
-Random forest leverages parallel computation by processing trees concurrently. Use the `n_jobs` parameter in `fit()` and `predict()` to control CPU usage (`n_jobs=-1` uses all cores).
-
-For prediction, conformity score calculations require a memory array of size `(n_train × n_test × n_classes)`. To optimize performance with high `n_jobs` values, split large test sets into smaller batches.
-
-See the documentation for more details and examples.
-
 ## 🔧 Requirements
 
 - Python >=3.9
@@ -68,6 +50,24 @@ git clone https://github.com/donlapark/coverforest.git
 cd coverforest
 pip install .
 ```
+
+### Regularization in conformal set predictions
+
+The classifier includes two regularization parameters $k$ and $\lambda$ that encourage smaller prediction sets [[5]](#5).
+
+```python
+clf = CoverForestClassifier(n_estimators=100, method='cv', k_init=2, lambda_init=0.1)
+```
+
+Automatic searching for suitable $k$ and $\lambda$ is also possible by specifying `k_init="auto"` and `lambda_init="auto"`, which are the default values of `CoverForestClassifier`.
+
+### Performance Tips
+
+Random forest leverages parallel computation by processing trees concurrently. Use the `n_jobs` parameter in `fit()` and `predict()` to control CPU usage (`n_jobs=-1` uses all cores).
+
+For prediction, conformity score calculations require a memory array of size `(n_train × n_test × n_classes)`. To optimize performance with high `n_jobs` values, split large test sets into smaller batches.
+
+See the documentation for more details and examples.
 
 ## 🔗 See Also
 

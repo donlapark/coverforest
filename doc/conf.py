@@ -31,6 +31,7 @@ extensions = [
     "sphinx.ext.mathjax",
     "sphinx.ext.napoleon",
     "sphinx.ext.viewcode",
+    "sphinxcontrib.bibtex",
     "sphinx_copybutton",
     "myst_nb",
 ]
@@ -70,6 +71,7 @@ master_doc = "index"
 
 todo_include_todos = False
 autosummary_generate = True
+bibtex_bibfiles = ["refs.bib"]
 
 # -- Options for numpydoc -----------------------------------------------------
 

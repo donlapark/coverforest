@@ -423,7 +423,7 @@ class ConformalRegressorMixin:
 
     _estimator_type = "regressor"
 
-    def score(self, X, y, alpha=0.05, scoring="length", sample_weight=None):
+    def score(self, X, y, alpha=0.05, scoring="coverage", sample_weight=None):
         """Evaluate the prediction intervals on the given test data and labels.
 
         Parameters
@@ -474,7 +474,9 @@ class ConformalRegressorMixin:
         if scoring == "both":
             return (coverage, avg_length)
         else:
-            raise ValueError("`scoring` must be one of `coverage`, `length` or `both`.")
+            raise ValueError(
+                "`scoring` must be one of `'coverage'`, `'length'` or `'both'`."
+            )
 
     def __sklearn_tags__(self):
         tags = super().__sklearn_tags__()
@@ -1957,8 +1959,18 @@ class CoverForestClassifier(ConformalForestClassifier):
     - 'split': Uses train-test split on the training set. This method
       is referred to as split conformal.
 
-    Note that another well-known method, Jackknife+, is a special case of CV+
-    with one sample in each fold.
+    If there a lot of empty sets returned by the `predict()` method, try increasing
+    the target coverage rate by decreasing the value of `alpha`. The option
+    `allow_empty_sets=False` should be used sparingly.
+
+    The Jackknife+-after-bootstrap implementation (`method='bootstrap'`) follows [5]
+    Specifically, before fitting, the number of sub-estimators is resampled from the
+    binomial distribution: Binomial(n_estimators / p, p) where
+
+        p = 1 / (1 - n_samples)**max_samples.
+
+    To fit the model with exactly `n_estimators` number of sub-estimators, initiate
+    the model with `resample_n_estimators=False`.
 
     Parameters
     ----------
@@ -2011,7 +2023,8 @@ class CoverForestClassifier(ConformalForestClassifier):
         Used when `method='bootstrap'`. If True, resample the value of
         `n_estimators` following the procedure in Kim, Xu & Barber (2020).
         Specifically, a new number of estimators is sampled from
-        Binomial(n_estimators, 1 / (1 - n_samples)**max_samples).
+        Binomial(n_estimators / p, p) where
+        p = 1 / (1 - n_samples)**max_samples.
 
     bootstrap : bool, default=True
         Whether bootstrap samples are used when building trees. If False, the
@@ -2431,8 +2444,14 @@ class CoverForestRegressor(ConformalForestRegressor):
     - 'split': Uses train-test split on the training set. This method
       is referred to as split conformal.
 
-    Note that another well-known method, Jackknife+, is a special case of CV+
-    with one sample in each fold.
+    The Jackknife+-after-bootstrap implementation (`method='bootstrap'`) follows [5]
+    Specifically, before fitting, the number of sub-estimators is resampled from the
+    binomial distribution: Binomial(n_estimators / p, p) where
+
+        p = 1 / (1 - n_samples)**max_samples.
+
+    To fit the model with exactly `n_estimators` number of sub-estimators, initiate
+    the model with `resample_n_estimators=False`.
 
     Parameters
     ----------
@@ -2464,7 +2483,8 @@ class CoverForestRegressor(ConformalForestRegressor):
         Used when `method='bootstrap'`. If True, resample the value of
         `n_estimators` following the procedure in Kim, Xu & Barber (2020).
         Specifically, a new number of estimators is sampled from
-        Binomial(n_estimators, 1 / (1 - n_samples)**max_samples).
+        Binomial(n_estimators / p, p) where
+        p = 1 / (1 - n_samples)**max_samples.
 
     criterion : {"squared_error", "absolute_error", "friedman_mse", "poisson"}, \
             default="squared_error"
