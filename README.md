@@ -1,5 +1,5 @@
 <p align="center">
-  <img width="160" src="https://github.com/donlapark/coverforest/blob/main/doc/_static/img/coverforest_96.png">
+  <img width="160" src="/doc/_static/img/coverforest_96.png">
 </p>
 
 ## 🌳 coverforest - Random Forest with Conformal Predictions
