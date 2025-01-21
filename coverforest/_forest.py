@@ -19,10 +19,10 @@ intervals using conformal prediction.
 
 The method, specified in the ``method`` parameter, includes:
 
-    - ``method=cv``:   Random Forest with CV+ for prediction sets/intervals
-    - ``method=bootstrap``:   Random Forest with Jackknife+-after-Bootstrap for
+    - ``method='cv'``:   Random Forest with CV+ for prediction sets/intervals
+    - ``method='bootstrap'``:   Random Forest with Jackknife+-after-Bootstrap for
       prediction sets/intervals
-    - ``method=split``:   Random Forest with split adaptive prediction set
+    - ``method='split'``:   Random Forest with split adaptive prediction set
       (APS) for prediction sets/intervals
 """
 
@@ -31,7 +31,7 @@ The method, specified in the ``method`` parameter, includes:
 #                       Joly Arnaud <arnaud.v.joly@gmail.com>
 #                       Fares Hedayati <fares.hedayati@gmail.com>
 #  coverforest authors: Donlapark Ponnoprat <donlapark.p@cmu.ac.th>
-#                       Panisara Meehinkong
+#                       Panisara Meehinkong <panisara_me@cmu.ac.th>
 #
 # License: BSD 3 clause
 

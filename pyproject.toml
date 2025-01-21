@@ -4,11 +4,11 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "coverforest"
-version = "0.0.2"
+version = "0.0.3"
 authors = [
-  { name="Donlapark Ponnoprat", email="donlapark.p@cmu.ac.th" },
+  { name="Donlapark Ponnoprat", email="donlapark@gmail.com" },
 ]
-description = "A template for scikit-learn compatible packages."
+description = "A simple and fast sklearn-compatible conformal predictions with random forests for both classification and regression tasks."
 readme = "README.md"
 requires-python = ">=3.9"
 dependencies = [
@@ -32,7 +32,8 @@ Homepage = "https://github.com/donlapark/coverforest"
 Issues = "https://github.com/donlapark/coverforest/issues"
 
 [tool.setuptools]
-packages = ["coverforest"]
+packages.find.exclude = ["doc", 'coverforest*tests']
+include-package-data = false
 
 [tool.setuptools_scm]
 version_file = "coverforest/_version.py"
