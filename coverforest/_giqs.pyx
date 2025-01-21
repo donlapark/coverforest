@@ -191,10 +191,9 @@ def _compute_test_giqs_cv(const float64_t[:,:,::1] oob_pred,
                         I[ij_idx + k] = indices[k]
                         sorted_scores[ij_idx + k] = oob_pred[i, j, indices[k]]
 
-                    ij_idx = i * samples_stride + j * n_classes
                     out[i, j, 0] = sorted_scores[ij_idx]
                     for k in range(1, n_classes):
-                        out[i, j, k] += out[i, j, k - 1] + sorted_scores[ij_idx + k]
+                        out[i, j, k] = out[i, j, k - 1] + sorted_scores[ij_idx + k]
 
             free(temp)
             free(indices)
@@ -213,7 +212,7 @@ def _compute_test_giqs_cv(const float64_t[:,:,::1] oob_pred,
                 for l in prange(n_test):
                     U[l] = dist(gen)
 
-                memset(penalty, 0, k_star * sizeof(float64_t))
+                memset(penalty, 0, n_classes * sizeof(float64_t))
                 for k in prange(k_star, n_classes):
                     penalty[k] = lambda_star * (k - k_star + 1)
 
@@ -334,7 +333,6 @@ def _compute_predictions_split(const float64_t[:,::1] oob_pred,
     cdef uniform_real_distribution[float32_t] dist
     cdef float64_t numerator, denominator
     cdef float64_t* temp
-    #cdef uint8_t* predictions
 
     try:
         with nogil, parallel(num_threads=num_threads):
@@ -345,7 +343,6 @@ def _compute_predictions_split(const float64_t[:,::1] oob_pred,
             penalties_cumsum = <float64_t*>malloc(n_classes * sizeof(float64_t))
             L = <int32_t*>malloc(n_samples * sizeof(int32_t))
             temp = <float64_t*>malloc(n_classes * sizeof(float64_t))
-            #predictions = <uint8_t*>malloc(n_samples * n_classes * sizeof(uint8_t))
 
             for k in prange(n_classes):
                 if k >= k_star:
@@ -353,7 +350,7 @@ def _compute_predictions_split(const float64_t[:,::1] oob_pred,
                 else:
                     penalties[k] = 0
 
-            memset(penalties_cumsum, 0, k_star * sizeof(float64_t))
+            memset(penalties_cumsum, 0, n_classes * sizeof(float64_t))
             for k in prange(k_star, n_classes):
                 penalties_cumsum[k] = lambda_star * (k - k_star + 1)
 
@@ -418,19 +415,12 @@ def _compute_predictions_split(const float64_t[:,::1] oob_pred,
                     if L[i] == 0:
                         L[i] = 1
 
-            #memset(predictions, 0, n_samples * n_classes)
             for i in prange(n_samples):
                 inc = i * n_classes
                 for j in range(L[i]):
                     out[i, indices[inc + j]] = 1
 
-            #for i in prange(n_samples):
-            #    inc = i * n_classes
-            #    for j in range(n_classes):
-            #        out[i, j] = predictions[inc + j]
-
             free(indices)
-            #free(predictions)
             free(L)
 
     finally:

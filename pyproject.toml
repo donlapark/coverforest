@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "coverforest"
-dynamic = ["version"]
+version = "0.0.1"
 authors = [
   { name="Donlapark Ponnoprat", email="donlapark.p@cmu.ac.th" },
 ]
@@ -51,8 +51,8 @@ coverforest = { path=".", editable=true }
 [tool.pixi.feature.lint.dependencies]
 # The version below should be aligned with the one of `.pre-commit-config.yaml`
 black = "23.3.0"
-pre-commit = "3.7.1"
-ruff = "0.4.2"
+pre-commit = "4.0.1"
+ruff = "0.9.1"
 
 [tool.pixi.feature.lint.tasks]
 black = { cmd = "black --check --diff coverforest && black --check --diff examples" }
@@ -113,6 +113,7 @@ exclude=[
     "dist",
     "doc/_build",
     "doc/auto_examples",
+    "experiments",
     "build",
     "coverforest/_version.py",
 ]

@@ -1,5 +1,8 @@
+Classification Examples
+=======================
+
 .. toctree::
     :maxdepth: 1
-    :glob:
 
-    *
+    classification_pipeline
+    classification_gridsearch

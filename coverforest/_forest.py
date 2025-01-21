@@ -26,10 +26,12 @@ The method, specified in the ``method`` parameter, includes:
       (APS) for prediction sets/intervals
 """
 
-# Authors: Gilles Louppe <g.louppe@gmail.com>
-#          Brian Holt <bdholt1@gmail.com>
-#          Joly Arnaud <arnaud.v.joly@gmail.com>
-#          Fares Hedayati <fares.hedayati@gmail.com>
+# scikit-learn authors: Gilles Louppe <g.louppe@gmail.com>
+#                       Brian Holt <bdholt1@gmail.com>
+#                       Joly Arnaud <arnaud.v.joly@gmail.com>
+#                       Fares Hedayati <fares.hedayati@gmail.com>
+#  coverforest authors: Donlapark Ponnoprat <donlapark.p@cmu.ac.th>
+#                       Panisara Meehinkong
 #
 # License: BSD 3 clause
 
