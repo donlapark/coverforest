@@ -1,0 +1,569 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>coverforest.metrics &#8212; coverforest 0.1.dev77+g07d1adf.d20250118 documentation</title>
+
+
+
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../../_static/styles/theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+<link href="../../_static/styles/pydata-sphinx-theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=8f2a1f02" />
+    <link rel="stylesheet" type="text/css" href="../../_static/styles/sphinx-book-theme.css?v=a3416100" />
+    <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../../_static/mystnb.4510f1fc1dee50b3e5859aac5469c37c29e427902b24a333a5f9fcb2f0b3ac41.css?v=be8a1c11" />
+
+  <!-- So that users can add custom icons -->
+  <script src="../../_static/scripts/fontawesome.js?digest=8878045cc6db502f8baf"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
+<link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
+
+    <script src="../../_static/documentation_options.js?v=7170f6c5"></script>
+    <script src="../../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../../_static/copybutton.js?v=f281be69"></script>
+    <script src="../../_static/scripts/sphinx-book-theme.js?v=887ef09a"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = '_modules/coverforest/metrics';</script>
+    <link rel="icon" href="../../_static/coverforest.ico"/>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="0.1.dev77+g07d1adf" />
+  </head>
+
+
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
+
+
+
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+
+  <div id="pst-scroll-pixel-helper"></div>
+
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+
+
+  <dialog id="pst-search-dialog">
+
+<form class="bd-search d-flex align-items-center"
+      action="../../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search..."
+         aria-label="Search..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+
+    <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+    </header>
+
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+
+
+
+
+
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar">
+
+
+
+  <div class="sidebar-header-items sidebar-primary__section">
+
+
+
+
+  </div>
+
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item">
+
+
+
+
+
+<a class="navbar-brand logo" href="../../index.html">
+
+
+
+
+
+
+
+
+
+
+    <img src="../../_static/coverforest_96.png" class="logo__image only-light" alt="coverforest 0.1.dev77+g07d1adf.d20250118 documentation - Home"/>
+    <img src="../../_static/coverforest_96.png" class="logo__image only-dark pst-js-only" alt="coverforest 0.1.dev77+g07d1adf.d20250118 documentation - Home"/>
+
+
+</a></div>
+        <div class="sidebar-primary-item">
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button></div>
+        <div class="sidebar-primary-item"><nav class="bd-links bd-docs-nav" aria-label="Main">
+    <div class="bd-toc-item navbar-nav active">
+        <ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="../../classification/classification_gridsearch.html">Searching <span class="math notranslate nohighlight">\(k\)</span> and <span class="math notranslate nohighlight">\(\lambda\)</span> using scikit-learn’s <code class="docutils literal notranslate"><span class="pre">GridSearchCV</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../classification/classification_pipeline.html">Conformal prediction using CV+ in scikit-learn pipeline</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../regression/regression_pipeline.html">Conformal regression using Jackknife+-after-bootstrap in scikit-learn pipeline</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../api.html">API Reference</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../generated/coverforest.CoverForestClassifier.html">CoverForestClassifier</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../generated/coverforest.CoverForestRegressor.html">CoverForestRegressor</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../generated/coverforest.metrics.average_interval_length_loss.html">coverforest.metrics.average_interval_length_loss</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../generated/coverforest.metrics.average_set_size_loss.html">coverforest.metrics.average_set_size_loss</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../generated/coverforest.metrics.classification_coverage_score.html">coverforest.metrics.classification_coverage_score</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../generated/coverforest.metrics.regression_coverage_score.html">coverforest.metrics.regression_coverage_score</a></li>
+</ul>
+</details></li>
+</ul>
+
+    </div>
+</nav></div>
+    </div>
+
+
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
+  </div>
+
+
+      </div>
+
+      <main id="main-content" class="bd-main" role="main">
+
+
+
+<div class="sbt-scroll-pixel-helper"></div>
+
+          <div class="bd-content">
+            <div class="bd-article-container">
+
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+
+    <div class="header-article-items__start">
+
+        <div class="header-article-item"><button class="sidebar-toggle primary-toggle btn btn-sm" title="Toggle primary sidebar" data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <span class="fa-solid fa-bars"></span>
+</button></div>
+
+    </div>
+
+
+    <div class="header-article-items__end">
+
+        <div class="header-article-item">
+
+<div class="article-header-buttons">
+
+
+<a href="https://github.com/donlapark/coverforest" target="_blank"
+   class="btn btn-sm btn-source-repository-button"
+   title="Source repository"
+   data-bs-placement="bottom" data-bs-toggle="tooltip"
+>
+
+
+<span class="btn__icon-container">
+  <i class="fab fa-github"></i>
+  </span>
+
+</a>
+
+
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button>
+
+
+<button class="btn btn-sm pst-navbar-icon search-button search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass fa-lg"></i>
+</button>
+
+</div></div>
+
+    </div>
+
+</div>
+</div>
+
+
+
+<div id="jb-print-docs-body" class="onlyprint">
+    <h1></h1>
+    <!-- Table of contents -->
+    <div id="print-main-content">
+        <div id="jb-print-toc">
+
+        </div>
+    </div>
+</div>
+
+
+
+<div id="searchbox"></div>
+                <article class="bd-article">
+
+  <h1>Source code for coverforest.metrics</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span><span class="w"> </span><span class="nn">numbers</span><span class="w"> </span><span class="kn">import</span> <span class="n">Real</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.utils._array_api</span><span class="w"> </span><span class="kn">import</span> <span class="n">_average</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.utils._param_validation</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">Interval</span><span class="p">,</span>
+    <span class="n">validate_params</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.utils.validation</span><span class="w"> </span><span class="kn">import</span> <span class="n">check_consistent_length</span><span class="p">,</span> <span class="n">column_or_1d</span>
+
+
+<div class="viewcode-block" id="classification_coverage_score">
+<a class="viewcode-back" href="../../generated/coverforest.metrics.classification_coverage_score.html#coverforest.metrics.classification_coverage_score">[docs]</a>
+<span class="nd">@validate_params</span><span class="p">(</span>
+    <span class="p">{</span>
+        <span class="s2">&quot;y_true&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;array-like&quot;</span><span class="p">,</span> <span class="s2">&quot;sparse matrix&quot;</span><span class="p">],</span>
+        <span class="s2">&quot;y_pred&quot;</span><span class="p">:</span> <span class="p">[</span><span class="nb">tuple</span><span class="p">,</span> <span class="s2">&quot;array-like&quot;</span><span class="p">,</span> <span class="s2">&quot;sparse matrix&quot;</span><span class="p">],</span>
+        <span class="s2">&quot;beta&quot;</span><span class="p">:</span> <span class="p">[</span><span class="n">Interval</span><span class="p">(</span><span class="n">Real</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="n">closed</span><span class="o">=</span><span class="s2">&quot;both&quot;</span><span class="p">)],</span>
+        <span class="s2">&quot;labels&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;array-like&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">],</span>
+        <span class="s2">&quot;sample_weight&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;array-like&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">],</span>
+    <span class="p">},</span>
+    <span class="n">prefer_skip_nested_validation</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">classification_coverage_score</span><span class="p">(</span><span class="n">y_true</span><span class="p">,</span> <span class="n">y_pred</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">labels</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">sample_weight</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Compute the empirical coverage for classification prediction sets.</span>
+
+<span class="sd">    The coverage score measures the proportion of true labels that are included</span>
+<span class="sd">    in the prediction sets.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    y_true : array-like of shape (n_samples,)</span>
+<span class="sd">        Ground truth (correct) labels.</span>
+
+<span class="sd">    y_pred : tuple, list or array-like of shape (n_samples, n_classes)</span>
+<span class="sd">        Binary matrix indicating the predicted set for each sample, where 1</span>
+<span class="sd">        indicates the class is included in the prediction set and 0 indicates</span>
+<span class="sd">        it is not.</span>
+
+<span class="sd">    labels : array-like of shape (n_classes,), default=None</span>
+<span class="sd">        List of labels in the same order of the columns of y_pred.</span>
+
+<span class="sd">    sample_weight : array-like of shape (n_samples,), default=None</span>
+<span class="sd">        Sample weights. If None, then samples are equally weighted.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    score : float</span>
+<span class="sd">        Returns the empirical coverage, i.e., the proportion of true labels</span>
+<span class="sd">        included in the prediction sets, weighted by sample_weight.</span>
+<span class="sd">        Best value is 1 and worst value is 0.</span>
+
+<span class="sd">    Examples</span>
+<span class="sd">    --------</span>
+<span class="sd">    &gt;&gt;&gt; import numpy as np</span>
+<span class="sd">    &gt;&gt;&gt; from metrics import classification_coverage_score</span>
+<span class="sd">    &gt;&gt;&gt; y_true = [0, 1, 2]</span>
+<span class="sd">    &gt;&gt;&gt; y_pred = np.array([[1, 0, 1], [0, 0, 1], [0, 0, 1]])</span>
+<span class="sd">    &gt;&gt;&gt; labels = [0, 1, 2]</span>
+<span class="sd">    &gt;&gt;&gt; classification_coverage_score(y_true, y_pred, labels=labels)</span>
+<span class="sd">    0.66...</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">y_pred</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">):</span>
+        <span class="n">y_pred</span> <span class="o">=</span> <span class="n">y_pred</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+
+    <span class="n">y_true</span> <span class="o">=</span> <span class="n">column_or_1d</span><span class="p">(</span><span class="n">y_true</span><span class="p">)</span>
+    <span class="n">n</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">y_pred</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="n">y_true</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="n">n</span>
+    <span class="n">check_consistent_length</span><span class="p">(</span><span class="n">y_true</span><span class="p">,</span> <span class="n">sample_weight</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">y_pred</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+        <span class="n">is_in_y_pred</span> <span class="o">=</span> <span class="p">[</span><span class="n">y_true</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="ow">in</span> <span class="n">y_pred</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n</span><span class="p">)]</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">labels</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;`labels` must be specified when `y_pred` is an array.&quot;</span><span class="p">)</span>
+        <span class="n">class_to_idx</span> <span class="o">=</span> <span class="p">{</span><span class="n">c</span><span class="p">:</span> <span class="n">i</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">c</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">labels</span><span class="p">)}</span>
+        <span class="n">y_idx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">vectorize</span><span class="p">(</span><span class="n">class_to_idx</span><span class="o">.</span><span class="fm">__getitem__</span><span class="p">)(</span><span class="n">y_true</span><span class="p">)</span>
+        <span class="n">is_in_y_pred</span> <span class="o">=</span> <span class="n">y_pred</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">y_pred</span><span class="p">)),</span> <span class="n">y_idx</span><span class="p">]</span>
+
+    <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="n">_average</span><span class="p">(</span><span class="n">is_in_y_pred</span><span class="p">,</span> <span class="n">weights</span><span class="o">=</span><span class="n">sample_weight</span><span class="p">))</span></div>
+
+
+
+<div class="viewcode-block" id="average_set_size_loss">
+<a class="viewcode-back" href="../../generated/coverforest.metrics.average_set_size_loss.html#coverforest.metrics.average_set_size_loss">[docs]</a>
+<span class="nd">@validate_params</span><span class="p">(</span>
+    <span class="p">{</span>
+        <span class="s2">&quot;y_true&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;array-like&quot;</span><span class="p">,</span> <span class="s2">&quot;sparse matrix&quot;</span><span class="p">],</span>
+        <span class="s2">&quot;y_pred&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;array-like&quot;</span><span class="p">,</span> <span class="s2">&quot;sparse matrix&quot;</span><span class="p">],</span>
+        <span class="s2">&quot;sample_weight&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;array-like&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">],</span>
+    <span class="p">},</span>
+    <span class="n">prefer_skip_nested_validation</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">average_set_size_loss</span><span class="p">(</span><span class="n">y_true</span><span class="p">,</span> <span class="n">y_pred</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Compute the average size of classification prediction sets.</span>
+
+<span class="sd">    For each sample, the set size is the number of classes included in</span>
+<span class="sd">    the prediction set (sum of binary indicators).</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    y_true : array-like of shape (n_samples,)</span>
+<span class="sd">        Ground truth (correct) labels.</span>
+
+<span class="sd">    y_pred : tuple, list or array-like of shape (n_samples, n_classes)</span>
+<span class="sd">        Binary matrix indicating the predicted set for each sample, where 1</span>
+<span class="sd">        indicates the class is included in the prediction set and 0 indicates</span>
+<span class="sd">        it is not.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    score : float</span>
+<span class="sd">        Returns the average prediction set size.</span>
+<span class="sd">        Minimum possible value is 0, maximum is n_classes.</span>
+
+<span class="sd">    Examples</span>
+<span class="sd">    --------</span>
+<span class="sd">    &gt;&gt;&gt; import numpy as np</span>
+<span class="sd">    &gt;&gt;&gt; from metrics import average_set_size_loss</span>
+<span class="sd">    &gt;&gt;&gt; y_pred = np.array([[1, 0, 0], [1, 1, 0], [0, 0, 1]])</span>
+<span class="sd">    &gt;&gt;&gt; average_set_size_loss(y_pred)</span>
+<span class="sd">    1.333...</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">y_pred</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">):</span>
+        <span class="n">y_pred</span> <span class="o">=</span> <span class="n">y_pred</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">y_pred</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+        <span class="n">y_sizes</span> <span class="o">=</span> <span class="p">[</span><span class="nb">len</span><span class="p">(</span><span class="n">y_pred</span><span class="p">)</span> <span class="k">for</span> <span class="n">y_pred</span> <span class="ow">in</span> <span class="n">y_pred</span><span class="p">]</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">y_sizes</span> <span class="o">=</span> <span class="n">y_pred</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="n">_average</span><span class="p">(</span><span class="n">y_sizes</span><span class="p">))</span></div>
+
+
+
+<div class="viewcode-block" id="regression_coverage_score">
+<a class="viewcode-back" href="../../generated/coverforest.metrics.regression_coverage_score.html#coverforest.metrics.regression_coverage_score">[docs]</a>
+<span class="nd">@validate_params</span><span class="p">(</span>
+    <span class="p">{</span>
+        <span class="s2">&quot;y_true&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;array-like&quot;</span><span class="p">,</span> <span class="s2">&quot;sparse matrix&quot;</span><span class="p">],</span>
+        <span class="s2">&quot;y_pred&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;array-like&quot;</span><span class="p">,</span> <span class="s2">&quot;sparse matrix&quot;</span><span class="p">],</span>
+        <span class="s2">&quot;sample_weight&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;array-like&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">],</span>
+    <span class="p">},</span>
+    <span class="n">prefer_skip_nested_validation</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">regression_coverage_score</span><span class="p">(</span><span class="n">y_true</span><span class="p">,</span> <span class="n">y_pred</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">sample_weight</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Compute the empirical coverage for regression prediction intervals.</span>
+
+<span class="sd">    The coverage score measures the proportion of true values that fall</span>
+<span class="sd">    within the predicted intervals.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    y_true : array-like of shape (n_samples,)</span>
+<span class="sd">        Ground truth (correct) target values.</span>
+
+<span class="sd">    y_pred : tuple, list or array-like of shape (n_samples, 2)</span>
+<span class="sd">        Predicted intervals, where each row contains [lower_bound, upper_bound].</span>
+
+<span class="sd">    sample_weight : array-like of shape (n_samples,), default=None</span>
+<span class="sd">        Sample weights. If None, then samples are equally weighted.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    score : float</span>
+<span class="sd">        Returns the empirical coverage, i.e., the proportion of true values</span>
+<span class="sd">        falling within the prediction intervals, weighted by sample_weight.</span>
+<span class="sd">        Best value is 1 and worst value is 0.</span>
+
+<span class="sd">    Examples</span>
+<span class="sd">    --------</span>
+<span class="sd">    &gt;&gt;&gt; import numpy as np</span>
+<span class="sd">    &gt;&gt;&gt; from metrics import regression_coverage_score</span>
+<span class="sd">    &gt;&gt;&gt; y_true = [1.0, -2.0, 3.0]</span>
+<span class="sd">    &gt;&gt;&gt; y_pred = np.array([[0.5, 1.5], [1.5, 2.5], [2.5, 3.5]])</span>
+<span class="sd">    &gt;&gt;&gt; regression_coverage_score(y_true, y_pred)</span>
+<span class="sd">    0.66...</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">y_pred</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">):</span>
+        <span class="n">y_pred</span> <span class="o">=</span> <span class="n">y_pred</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+
+    <span class="n">y_true</span> <span class="o">=</span> <span class="n">column_or_1d</span><span class="p">(</span><span class="n">y_true</span><span class="p">)</span>
+    <span class="n">check_consistent_length</span><span class="p">(</span><span class="n">y_true</span><span class="p">,</span> <span class="n">y_pred</span><span class="p">,</span> <span class="n">sample_weight</span><span class="p">)</span>
+
+    <span class="n">low</span> <span class="o">=</span> <span class="n">y_pred</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span>
+    <span class="n">high</span> <span class="o">=</span> <span class="n">y_pred</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">]</span>
+    <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="n">_average</span><span class="p">((</span><span class="n">low</span> <span class="o">&lt;=</span> <span class="n">y_true</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">y_true</span> <span class="o">&lt;=</span> <span class="n">high</span><span class="p">),</span> <span class="n">weights</span><span class="o">=</span><span class="n">sample_weight</span><span class="p">))</span></div>
+
+
+
+<div class="viewcode-block" id="average_interval_length_loss">
+<a class="viewcode-back" href="../../generated/coverforest.metrics.average_interval_length_loss.html#coverforest.metrics.average_interval_length_loss">[docs]</a>
+<span class="nd">@validate_params</span><span class="p">(</span>
+    <span class="p">{</span>
+        <span class="s2">&quot;y_true&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;array-like&quot;</span><span class="p">,</span> <span class="s2">&quot;sparse matrix&quot;</span><span class="p">],</span>
+        <span class="s2">&quot;y_pred&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;array-like&quot;</span><span class="p">,</span> <span class="s2">&quot;sparse matrix&quot;</span><span class="p">],</span>
+        <span class="s2">&quot;sample_weight&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;array-like&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">],</span>
+    <span class="p">},</span>
+    <span class="n">prefer_skip_nested_validation</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">average_interval_length_loss</span><span class="p">(</span><span class="n">y_true</span><span class="p">,</span> <span class="n">y_pred</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Compute the average length of regression prediction intervals.</span>
+
+<span class="sd">    For each sample, the interval length is the difference between</span>
+<span class="sd">    the upper and lower bounds.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    y_true : array-like of shape (n_samples,)</span>
+<span class="sd">        Ground truth (correct) labels.</span>
+
+<span class="sd">    y_pred : tuple, list or array-like of shape (n_samples, 2)</span>
+<span class="sd">        Predicted intervals, where each row contains [lower_bound, upper_bound].</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    score : float</span>
+<span class="sd">        Returns the average interval length.</span>
+<span class="sd">        Minimum possible value is 0, no maximum value.</span>
+
+<span class="sd">    Examples</span>
+<span class="sd">    --------</span>
+<span class="sd">    &gt;&gt;&gt; import numpy as np</span>
+<span class="sd">    &gt;&gt;&gt; from metrics import average_interval_length_loss</span>
+<span class="sd">    &gt;&gt;&gt; y_pred = np.array([[0.5, 2.5], [1.5, 4.5], [2.5, 3.5]])</span>
+<span class="sd">    &gt;&gt;&gt; average_interval_length_loss(y_pred)</span>
+<span class="sd">    2.0</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">y_pred</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">):</span>
+        <span class="n">y_pred</span> <span class="o">=</span> <span class="n">y_pred</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+
+    <span class="n">low</span> <span class="o">=</span> <span class="n">y_pred</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span>
+    <span class="n">high</span> <span class="o">=</span> <span class="n">y_pred</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">]</span>
+    <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="n">_average</span><span class="p">(</span><span class="n">high</span> <span class="o">-</span> <span class="n">low</span><span class="p">))</span></div>
+
+</pre></div>
+
+                </article>
+
+
+
+
+
+
+                <footer class="prev-next-footer d-print-none">
+
+<div class="prev-next-area">
+</div>
+                </footer>
+
+            </div>
+
+
+
+
+          </div>
+          <footer class="bd-footer-content">
+
+<div class="bd-footer-content__inner container">
+
+  <div class="footer-item">
+
+<p class="component-author">
+By D. Ponnoprat
+</p>
+
+  </div>
+
+  <div class="footer-item">
+
+
+  <p class="copyright">
+
+      © Copyright 2025, D. Ponnoprat.
+      <br/>
+
+  </p>
+
+  </div>
+
+  <div class="footer-item">
+
+  </div>
+
+  <div class="footer-item">
+
+  </div>
+
+</div>
+          </footer>
+
+
+      </main>
+    </div>
+  </div>
+
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf"></script>
+<script defer src="../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf"></script>
+
+  <footer class="bd-footer">
+  </footer>
+  </body>
+</html>
