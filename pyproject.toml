@@ -32,7 +32,7 @@ Homepage = "https://github.com/donlapark/coverforest"
 Issues = "https://github.com/donlapark/coverforest/issues"
 
 [tool.setuptools]
-packages.find.exclude = ["docsrc", 'coverforest*tests']
+packages.find.exclude = ["doc", 'coverforest*tests']
 include-package-data = false
 
 [tool.setuptools_scm]
@@ -82,8 +82,8 @@ sphinx-copybutton = "*"
 myst-nb = "*"
 
 [tool.pixi.feature.doc.tasks]
-build-doc = { cmd = "make html", cwd = "docsrc" }
-clean-doc = { cmd = "rm -rf _build", cwd = "docsrc" }
+build-doc = { cmd = "make html", cwd = "doc" }
+clean-doc = { cmd = "rm -rf _build", cwd = "doc" }
 
 [tool.pixi.environments]
 doc = ["doc"]
@@ -112,8 +112,8 @@ exclude=[
     ".git",
     "__pycache__",
     "dist",
-    "docsrc/_build",
-    "docsrc/auto_examples",
+    "doc/_build",
+    "doc/auto_examples",
     "experiments",
     "build",
     "coverforest/_version.py",
@@ -135,8 +135,8 @@ ignore=[
 # It's fine not to put the import at the top of the file in the examples
 # folder.
 "examples/*"=["E402"]
-"docsrc/conf.py"=["E402"]
-"docsrc/_templates/numpydoc_docstring.py"=["F821", "W292"]
+"doc/conf.py"=["E402"]
+"doc/_templates/numpydoc_docstring.py"=["F821", "W292"]
 
 [tool.pytest.ini_options]
 addopts = ["--import-mode=importlib",]

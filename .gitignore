@@ -74,7 +74,7 @@ target/
 .AppleDouble
 .LSOverride
 
-docsrc/
+doc/
 wheels/
 wheelhouse/
 requirements/

@@ -32,7 +32,7 @@
     <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=8f2a1f02" />
     <link rel="stylesheet" type="text/css" href="../../_static/styles/sphinx-book-theme.css?v=a3416100" />
     <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
-    <link rel="stylesheet" type="text/css" href="../../_static/mystnb.4510f1fc1dee50b3e5859aac5469c37c29e427902b24a333a5f9fcb2f0b3ac41.css?v=be8a1c11" />
+    <link rel="stylesheet" type="text/css" href="../../_static/mystnb.4510f1fc1dee50b3e5859aac5469c37c29e427902b24a333a5f9fcb2f0b3ac41.css" />
 
   <!-- So that users can add custom icons -->
   <script src="../../_static/scripts/fontawesome.js?digest=8878045cc6db502f8baf"></script>
@@ -148,9 +148,15 @@
         <div class="sidebar-primary-item"><nav class="bd-links bd-docs-nav" aria-label="Main">
     <div class="bd-toc-item navbar-nav active">
         <ul class="nav bd-sidenav">
-<li class="toctree-l1"><a class="reference internal" href="../../classification/classification_gridsearch.html">Searching <span class="math notranslate nohighlight">\(k\)</span> and <span class="math notranslate nohighlight">\(\lambda\)</span> using scikit-learn’s <code class="docutils literal notranslate"><span class="pre">GridSearchCV</span></code></a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../classification/classification_pipeline.html">Conformal prediction using CV+ in scikit-learn pipeline</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../regression/regression_pipeline.html">Conformal regression using Jackknife+-after-bootstrap in scikit-learn pipeline</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../classification/index.html">Classification Examples</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../classification/classification_pipeline.html">Conformal classification using CV+ in a <code class="docutils literal notranslate"><span class="pre">Pipeline</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../classification/classification_gridsearch.html">Searching <span class="math notranslate nohighlight">\(k\)</span> and <span class="math notranslate nohighlight">\(\lambda\)</span> using scikit-learn’s <code class="docutils literal notranslate"><span class="pre">GridSearchCV</span></code></a></li>
+</ul>
+</details></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../regression/index.html">Regression Examples</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../regression/regression_pipeline.html">Conformal regression using Jackknife+-after-bootstrap in a <code class="docutils literal notranslate"><span class="pre">Pipeline</span></code></a></li>
+</ul>
+</details></li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="../../api.html">API Reference</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
 <li class="toctree-l2"><a class="reference internal" href="../../generated/coverforest.CoverForestClassifier.html">CoverForestClassifier</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../generated/coverforest.CoverForestRegressor.html">CoverForestRegressor</a></li>
@@ -280,17 +286,21 @@
 
 <span class="sd">The method, specified in the ``method`` parameter, includes:</span>
 
-<span class="sd">    - ``method=cv``:   Random Forest with CV+ for prediction sets/intervals</span>
-<span class="sd">    - ``method=bootstrap``:   Random Forest with Jackknife+-after-Bootstrap for</span>
+<span class="sd">    - ``method=&#39;cv&#39;``:   Random Forest with CV+ for prediction sets/intervals</span>
+<span class="sd">    - ``method=&#39;bootstrap&#39;``:   Random Forest with Jackknife+-after-Bootstrap for</span>
 <span class="sd">      prediction sets/intervals</span>
-<span class="sd">    - ``method=split``:   Random Forest with split adaptive prediction set</span>
-<span class="sd">      (APS) for prediction sets/intervals</span>
+<span class="sd">    - ``method=&#39;split&#39;``:   Random Forest with split conformal</span>
+
+<span class="sd">For classification, the conformilty score can be either adaptive prediction set (APS)</span>
+<span class="sd">score or regularized adaptive prediction set (RAPS) score.</span>
 <span class="sd">&quot;&quot;&quot;</span>
 
-<span class="c1"># Authors: Gilles Louppe &lt;g.louppe@gmail.com&gt;</span>
-<span class="c1">#          Brian Holt &lt;bdholt1@gmail.com&gt;</span>
-<span class="c1">#          Joly Arnaud &lt;arnaud.v.joly@gmail.com&gt;</span>
-<span class="c1">#          Fares Hedayati &lt;fares.hedayati@gmail.com&gt;</span>
+<span class="c1"># scikit-learn authors: Gilles Louppe &lt;g.louppe@gmail.com&gt;</span>
+<span class="c1">#                       Brian Holt &lt;bdholt1@gmail.com&gt;</span>
+<span class="c1">#                       Joly Arnaud &lt;arnaud.v.joly@gmail.com&gt;</span>
+<span class="c1">#                       Fares Hedayati &lt;fares.hedayati@gmail.com&gt;</span>
+<span class="c1"># coverforest authors: Donlapark Ponnoprat &lt;donlapark@gmail.com&gt;</span>
+<span class="c1">#                      Panisara Meehinkong &lt;Panisara.nf@gmail.com&gt;</span>
 <span class="c1">#</span>
 <span class="c1"># License: BSD 3 clause</span>
 
@@ -1001,7 +1011,7 @@
 
                 <span class="k">if</span> <span class="n">cv</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">_n_samples</span><span class="p">:</span>
                     <span class="nb">print</span><span class="p">(</span>
-                        <span class="sa">f</span><span class="s2">&quot;The number of splits of </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_n_samples</span><span class="si">}</span><span class="s2"> is too low. Set the&quot;</span>
+                        <span class="sa">f</span><span class="s2">&quot;The number of splits of </span><span class="si">{</span><span class="n">cv</span><span class="si">}</span><span class="s2"> is too high. Set the&quot;</span>
                         <span class="s2">&quot; number of splits as the number of samples instead.&quot;</span>
                     <span class="p">)</span>
                     <span class="n">cv</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_n_samples</span>
