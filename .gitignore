@@ -74,10 +74,10 @@ target/
 .AppleDouble
 .LSOverride
 
-doc
-wheels
-wheelhouse
-requirements
+doc/
+wheels/
+wheelhouse/
+requirements/
 
 # auto-generated files
 coverforest/_version.py
