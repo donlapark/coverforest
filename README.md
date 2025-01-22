@@ -30,6 +30,8 @@ clf.fit(X_train, y_train)
 y_pred, y_sets = clf.predict(X_test, alpha=0.05)            # 95% coverage sets
 ```
 
+For more examples, see [Documentation](https://donlapark.github.io/coverforest).
+
 ## 🔧 Requirements
 
 - Python >=3.9
