@@ -74,6 +74,7 @@ target/
 .AppleDouble
 .LSOverride
 
+doc
 wheels
 wheelhouse
 requirements

@@ -6,12 +6,12 @@ checks are already parts of the fitting and prediction methods in CoverForestCla
 and CoverForestRegressor.
 """
 
-# Authors: Gilles Louppe <g.louppe@gmail.com>
-#          Brian Holt <bdholt1@gmail.com>
-#          Joly Arnaud <arnaud.v.joly@gmail.com>
-#          Fares Hedayati <fares.hedayati@gmail.com>
-#          Donlapark Ponnoprat <donlapark.p@cmu.ac.th>
-#
+# scikit-learn authors: Gilles Louppe <g.louppe@gmail.com>
+#                       Brian Holt <bdholt1@gmail.com>
+#                       Joly Arnaud <arnaud.v.joly@gmail.com>
+#                       Fares Hedayati <fares.hedayati@gmail.com>
+# coverforest authors: Donlapark Ponnoprat <donlapark.p@cmu.ac.th>
+#                      Panisara Meehinkong <Panisara.nf@gmail.com>
 # License: BSD 3 clause
 
 import threading

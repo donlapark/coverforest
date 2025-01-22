@@ -1,3 +1,7 @@
+# coverforest authors: Donlapark Ponnoprat <donlapark.p@cmu.ac.th>
+#                      Panisara Meehinkong <Panisara.nf@gmail.com>
+# License: BSD 3 clause
+
 from numbers import Real
 
 import numpy as np

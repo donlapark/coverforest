@@ -22,16 +22,18 @@ The method, specified in the ``method`` parameter, includes:
     - ``method='cv'``:   Random Forest with CV+ for prediction sets/intervals
     - ``method='bootstrap'``:   Random Forest with Jackknife+-after-Bootstrap for
       prediction sets/intervals
-    - ``method='split'``:   Random Forest with split adaptive prediction set
-      (APS) for prediction sets/intervals
+    - ``method='split'``:   Random Forest with split conformal
+
+For classification, the conformilty score can be either adaptive prediction set (APS)
+score or regularized adaptive prediction set (RAPS) score.
 """
 
 # scikit-learn authors: Gilles Louppe <g.louppe@gmail.com>
 #                       Brian Holt <bdholt1@gmail.com>
 #                       Joly Arnaud <arnaud.v.joly@gmail.com>
 #                       Fares Hedayati <fares.hedayati@gmail.com>
-#  coverforest authors: Donlapark Ponnoprat <donlapark.p@cmu.ac.th>
-#                       Panisara Meehinkong <panisara_me@cmu.ac.th>
+# coverforest authors: Donlapark Ponnoprat <donlapark@gmail.com>
+#                      Panisara Meehinkong <Panisara.nf@gmail.com>
 #
 # License: BSD 3 clause
 
@@ -742,7 +744,7 @@ class BaseConformalForest(BaseForest):
 
                 if cv > self._n_samples:
                     print(
-                        f"The number of splits of {self._n_samples} is too low. Set the"
+                        f"The number of splits of {cv} is too high. Set the"
                         " number of splits as the number of samples instead."
                     )
                     cv = self._n_samples
