@@ -31,6 +31,7 @@ y_pred, y_sets = clf.predict(X_test, alpha=0.05)            # 95% coverage sets
 ```
 
 Try these models in Colab notebooks: [[Classification](https://colab.research.google.com/github/donlapark/coverforest/blob/main/notebooks/classification_pipeline.ipynb)] [[Regression](https://colab.research.google.com/github/donlapark/coverforest/blob/main/notebooks/regression_pipeline.ipynb)]
+
 For additional examples and package API, see [Documentation](https://donlapark.github.io/coverforest).
 
 ## 🔧 Requirements
