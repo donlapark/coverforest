@@ -2,7 +2,7 @@
   <img width="160" src="images/coverforest_96.png">
 </p>
 
-## 🌳 coverforest - Random Forest with Conformal Predictions
+## 🌳 coverforest - Conformal Predictions with Random Forest
 
 A simple and fast implementation of conformal random forests for both classification and regression tasks. **coverforest** extends [scikit-learn](https://scikit-learn.org)'s random forest implementation to provide prediction sets/intervals with guaranteed coverage using conformal prediction methods.
 

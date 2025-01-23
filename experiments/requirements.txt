@@ -1,0 +1,10 @@
+coverforest
+MAPIE
+numpy
+pandas
+scikit_learn>=1.6.1
+scipy
+tensorflow_cpu
+ucimlrepo
+matplotlib
+seaborn
