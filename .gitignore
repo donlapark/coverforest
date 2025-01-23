@@ -73,6 +73,7 @@ target/
 .DS_Store
 .AppleDouble
 .LSOverride
+.ipynb_checkpoints
 
 doc/
 wheels/
