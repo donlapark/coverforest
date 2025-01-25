@@ -3,8 +3,8 @@
 # cython: initializedcheck=False
 # cython: language_level=3
 
-# Author: Donlapark Ponnoprat <donlapark@gmail.com>
-# Author: Panisara Meehinkong <Panisara.nf@gmail.com>
+# Authors: Donlapark Ponnoprat <donlapark@gmail.com>
+#          Panisara Meehinkong <Panisara.nf@gmail.com>
 # SPDX-License-Identifier: BSD-3-Clause
 # Implementation by Donlapark Ponnoprat & Panisara Meehinkong
 # See references in _forest.py for papers describing the technique

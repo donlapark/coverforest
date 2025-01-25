@@ -1,6 +1,0 @@
-# Configuration for coverage.py
-
-[run]
-branch = True
-source = coverforest
-include = */coverforest/*

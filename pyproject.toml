@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "coverforest"
-version = "0.0.3"
+version = "0.0.4"
 authors = [
   { name="Donlapark Ponnoprat", email="donlapark@gmail.com" },
 ]
@@ -32,8 +32,16 @@ Homepage = "https://github.com/donlapark/coverforest"
 Issues = "https://github.com/donlapark/coverforest/issues"
 
 [tool.setuptools]
-packages.find.exclude = ["doc", 'coverforest*tests']
-include-package-data = false
+packages.find.exclude = [
+    "doc*",
+    'coverforest*tests',
+    "docs*",
+    "notebooks*",
+    "wheels",
+    "wheelhouse",
+    "images",
+    "experiments*",
+]
 
 [tool.setuptools_scm]
 version_file = "coverforest/_version.py"
@@ -141,4 +149,3 @@ ignore=[
 [tool.pytest.ini_options]
 addopts = ["--import-mode=importlib",]
 doctest_optionflags = "NORMALIZE_WHITESPACE"
-pythonpath = "coverforest"

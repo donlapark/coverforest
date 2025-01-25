@@ -1,10 +1,8 @@
-import os
 import sys
 
 import numpy as np
 from Cython.Build import cythonize
 from setuptools import Extension, setup
-
 
 if sys.platform == "win32":
     allocator_libs = []  # type: ignore
@@ -45,7 +43,6 @@ ext_modules = [
 ]
 
 setup(
-    entry_points=None,
     ext_modules=cythonize(
         ext_modules,
         annotate=False,
