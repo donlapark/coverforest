@@ -107,11 +107,10 @@ See the documentation for more details and examples.
 If you use **coverforest** in your research, please cite:
 
 ```bibtex
-@software{coverforest2025,
-  author = {Donlapark Ponnoprat},
-  title = {coverforest: Fast Conformal Random Forests},
-  year = {2025},
-  publisher = {GitHub},
-  url = {https://github.com/donlapark/coverforest}
+@misc{coverforest2025,
+Author = {Panisara Meehinkong and Donlapark Ponnoprat},
+Title = {coverforest: Conformal Predictions with Random Forest in Python},
+Year = {2025},
+Eprint = {arXiv:2501.14570},
 }
 ```
