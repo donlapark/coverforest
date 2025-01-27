@@ -3168,7 +3168,7 @@ packages:
 - pypi: .
   name: coverforest
   version: 0.0.4
-  sha256: 56ae863cb65def0b221668694d860f5e172858fa18a498ddf8b072f43df41a7e
+  sha256: a5118a525c0a169202c63535a8fcdc461765a1214faeaadda740b25f5ab04f89
   requires_dist:
   - scikit-learn>=1.6.0
   requires_python: '>=3.9'
